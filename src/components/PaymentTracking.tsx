@@ -22,37 +22,7 @@ interface Payment {
 }
 
 const PaymentTracking = () => {
-  const [payments, setPayments] = useState<Payment[]>([
-    {
-      id: '1',
-      memberName: 'John Doe',
-      amount: 69,
-      date: '2024-06-01',
-      method: 'Card',
-      status: 'completed',
-      plan: 'Premium',
-    },
-    {
-      id: '2',
-      memberName: 'Jane Smith',
-      amount: 39,
-      date: '2024-06-05',
-      method: 'Cash',
-      status: 'completed',
-      plan: 'Basic',
-    },
-    {
-      id: '3',
-      memberName: 'Mike Johnson',
-      amount: 69,
-      date: '2024-06-20',
-      method: 'Card',
-      status: 'pending',
-      plan: 'Premium',
-      dueDate: '2024-06-25',
-    }
-  ]);
-
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newPayment, setNewPayment] = useState({
@@ -143,7 +113,9 @@ const PaymentTracking = () => {
             <CardTitle className="text-sm font-medium">Payment Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">94%</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {payments.length > 0 ? Math.round((payments.filter(p => p.status === 'completed').length / payments.length) * 100) : 0}%
+            </div>
             <p className="text-xs text-gray-500">On-time payments</p>
           </CardContent>
         </Card>
@@ -285,7 +257,7 @@ const PaymentTracking = () => {
         <Card className="p-8 text-center">
           <DollarSign className="w-12 h-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
-          <p className="text-gray-600">Try adjusting your search or record new payments.</p>
+          <p className="text-gray-600">Record your first payment to get started</p>
         </Card>
       )}
     </div>

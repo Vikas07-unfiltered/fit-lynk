@@ -24,45 +24,7 @@ interface Trainer {
 }
 
 const TrainerManagement = () => {
-  const [trainers, setTrainers] = useState<Trainer[]>([
-    {
-      id: '1',
-      name: 'Alex Rodriguez',
-      phone: '+1234567890',
-      specialty: 'Strength Training',
-      hourlyRate: 45,
-      status: 'active',
-      joinDate: '2024-01-15',
-      totalSessions: 156,
-      monthlyEarnings: 2340,
-      rating: 4.8,
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      phone: '+1234567891',
-      specialty: 'Yoga & Pilates',
-      hourlyRate: 40,
-      status: 'active',
-      joinDate: '2024-02-01',
-      totalSessions: 134,
-      monthlyEarnings: 2010,
-      rating: 4.9,
-    },
-    {
-      id: '3',
-      name: 'Mike Chen',
-      phone: '+1234567892',
-      specialty: 'CrossFit',
-      hourlyRate: 50,
-      status: 'active',
-      joinDate: '2024-03-10',
-      totalSessions: 89,
-      monthlyEarnings: 1580,
-      rating: 4.7,
-    }
-  ]);
-
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newTrainer, setNewTrainer] = useState({
@@ -120,7 +82,7 @@ const TrainerManagement = () => {
 
   const totalEarnings = trainers.reduce((sum, trainer) => sum + trainer.monthlyEarnings, 0);
   const totalSessions = trainers.reduce((sum, trainer) => sum + trainer.totalSessions, 0);
-  const averageRating = trainers.reduce((sum, trainer) => sum + trainer.rating, 0) / trainers.length;
+  const averageRating = trainers.length > 0 ? trainers.reduce((sum, trainer) => sum + trainer.rating, 0) / trainers.length : 0;
 
   return (
     <div className="space-y-6">
@@ -302,7 +264,7 @@ const TrainerManagement = () => {
         <Card className="p-8 text-center">
           <User className="w-12 h-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No trainers found</h3>
-          <p className="text-gray-600">Try adjusting your search or add new trainers.</p>
+          <p className="text-gray-600">Add your first trainer to get started</p>
         </Card>
       )}
     </div>

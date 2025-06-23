@@ -17,31 +17,7 @@ interface AttendanceRecord {
 }
 
 const AttendanceTracker = () => {
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([
-    {
-      id: '1',
-      memberName: 'John Doe',
-      checkInTime: '08:30',
-      checkOutTime: '10:15',
-      date: '2024-06-23',
-      duration: 105,
-    },
-    {
-      id: '2',
-      memberName: 'Jane Smith',
-      checkInTime: '09:15',
-      checkOutTime: '11:00',
-      date: '2024-06-23',
-      duration: 105,
-    },
-    {
-      id: '3',
-      memberName: 'Mike Johnson',
-      checkInTime: '10:00',
-      date: '2024-06-23',
-    }
-  ]);
-
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [qrScanMode, setQrScanMode] = useState(false);
   const [manualMemberName, setManualMemberName] = useState('');
@@ -277,6 +253,7 @@ const AttendanceTracker = () => {
               <div className="text-center py-8">
                 <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                 <p className="text-gray-600">No attendance records for today</p>
+                <p className="text-sm text-gray-500">Check-ins will appear here when members arrive</p>
               </div>
             )}
           </CardContent>

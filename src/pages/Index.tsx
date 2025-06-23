@@ -9,16 +9,18 @@ import PaymentTracking from '@/components/PaymentTracking';
 import AttendanceTracker from '@/components/AttendanceTracker';
 import Reports from '@/components/Reports';
 import TrainerManagement from '@/components/TrainerManagement';
+import { useMembers } from '@/hooks/useMembers';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const { members } = useMembers();
 
-  // Mock data for dashboard stats
+  // Calculate real stats from actual data
   const stats = {
-    totalMembers: 156,
-    activeMembers: 142,
-    monthlyRevenue: 12450,
-    todayAttendance: 67
+    totalMembers: members.length,
+    activeMembers: members.filter(member => member.status === 'active').length,
+    monthlyRevenue: 0, // Would be calculated from payments
+    todayAttendance: 0 // Would be calculated from attendance records
   };
 
   return (
@@ -65,7 +67,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.totalMembers}</div>
-                  <p className="text-emerald-100 text-xs">+12 this month</p>
+                  <p className="text-emerald-100 text-xs">Registered in system</p>
                 </CardContent>
               </Card>
 
@@ -75,7 +77,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.activeMembers}</div>
-                  <p className="text-blue-100 text-xs">91% retention rate</p>
+                  <p className="text-blue-100 text-xs">Currently active</p>
                 </CardContent>
               </Card>
 
@@ -85,7 +87,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">${stats.monthlyRevenue}</div>
-                  <p className="text-green-100 text-xs">+8% from last month</p>
+                  <p className="text-green-100 text-xs">This month</p>
                 </CardContent>
               </Card>
 
@@ -95,7 +97,7 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{stats.todayAttendance}</div>
-                  <p className="text-purple-100 text-xs">47% of active members</p>
+                  <p className="text-purple-100 text-xs">Check-ins today</p>
                 </CardContent>
               </Card>
             </div>
@@ -135,19 +137,10 @@ const Index = () => {
                   <CardTitle>Recent Activity</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">New member: John Doe</span>
-                      <span className="text-xs text-gray-500">2 hours ago</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Payment received: $89</span>
-                      <span className="text-xs text-gray-500">3 hours ago</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Attendance marked: 45 members</span>
-                      <span className="text-xs text-gray-500">5 hours ago</span>
-                    </div>
+                  <div className="text-center py-8">
+                    <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-600">No recent activity</p>
+                    <p className="text-sm text-gray-500">Activity will appear here as you use the system</p>
                   </div>
                 </CardContent>
               </Card>
