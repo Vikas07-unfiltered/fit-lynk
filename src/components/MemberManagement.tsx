@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +18,7 @@ interface Member {
   phone: string;
   whatsapp_number?: string;
   plan: string;
-  status: 'active' | 'inactive' | 'pending';
+  status: string; // Changed from strict union to string to match database
   join_date: string;
   last_payment: string | null;
   photo_url?: string;
@@ -92,7 +91,7 @@ const MemberManagement = () => {
 
       const { data, error } = await supabase
         .from('members')
-        .insert([memberData])
+        .insert(memberData) // Fixed: removed array wrapper since we're inserting single object
         .select()
         .single();
 
@@ -122,7 +121,7 @@ const MemberManagement = () => {
       inactive: 'bg-red-100 text-red-800',
       pending: 'bg-yellow-100 text-yellow-800',
     };
-    return variants[status as keyof typeof variants] || '';
+    return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
   };
 
   if (loading) {
