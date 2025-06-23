@@ -40,22 +40,24 @@ export const useMembers = () => {
     }
 
     try {
+      const insertData = {
+        name: newMemberData.name,
+        phone: newMemberData.phone,
+        plan: newMemberData.plan,
+        status: 'active',
+        last_payment: new Date().toISOString().split('T')[0],
+        ...(newMemberData.whatsapp_number && { whatsapp_number: newMemberData.whatsapp_number })
+      };
+
       const { data, error } = await supabase
         .from('members')
-        .insert({
-          name: newMemberData.name,
-          phone: newMemberData.phone,
-          whatsapp_number: newMemberData.whatsapp_number || null,
-          plan: newMemberData.plan,
-          status: 'active',
-          last_payment: new Date().toISOString().split('T')[0],
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) throw error;
 
-      setMembers([data, ...members]);
+      setMembers([data as Member, ...members]);
       
       toast({
         title: "Success",
