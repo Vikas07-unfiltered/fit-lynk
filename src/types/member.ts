@@ -15,4 +15,6 @@ export interface NewMember {
   name: string;
   phone: string;
   plan: string;
+  join_date?: string;
+  first_payment_date?: string;
 }
