@@ -41,6 +41,7 @@ export const useMembers = () => {
 
     try {
       const insertData = {
+        user_id: '', // This will be overridden by the database trigger
         name: newMemberData.name,
         phone: newMemberData.phone,
         plan: newMemberData.plan,
