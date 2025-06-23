@@ -76,9 +76,9 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
                 <SelectValue placeholder="Select a plan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Basic">Basic - $39/month</SelectItem>
-                <SelectItem value="Premium">Premium - $69/month</SelectItem>
-                <SelectItem value="VIP">VIP - $99/month</SelectItem>
+                <SelectItem value="Basic">Basic - ₹2999/month</SelectItem>
+                <SelectItem value="Premium">Premium - ₹4999/month</SelectItem>
+                <SelectItem value="VIP">VIP - ₹7999/month</SelectItem>
               </SelectContent>
             </Select>
           </div>

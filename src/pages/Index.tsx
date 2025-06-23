@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -86,7 +85,7 @@ const Index = () => {
                   <CardTitle className="text-sm font-medium">Monthly Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">${stats.monthlyRevenue}</div>
+                  <div className="text-2xl font-bold">₹{stats.monthlyRevenue}</div>
                   <p className="text-green-100 text-xs">This month</p>
                 </CardContent>
               </Card>

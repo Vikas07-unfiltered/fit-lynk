@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -93,7 +92,7 @@ const PaymentTracking = () => {
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">${totalRevenue}</div>
+            <div className="text-2xl font-bold text-green-600">₹{totalRevenue}</div>
             <p className="text-xs text-gray-500">This month</p>
           </CardContent>
         </Card>
@@ -103,7 +102,7 @@ const PaymentTracking = () => {
             <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">${pendingAmount}</div>
+            <div className="text-2xl font-bold text-yellow-600">₹{pendingAmount}</div>
             <p className="text-xs text-gray-500">Awaiting collection</p>
           </CardContent>
         </Card>
@@ -184,9 +183,9 @@ const PaymentTracking = () => {
                     <SelectValue placeholder="Select plan" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Basic">Basic - $39/month</SelectItem>
-                    <SelectItem value="Premium">Premium - $69/month</SelectItem>
-                    <SelectItem value="VIP">VIP - $99/month</SelectItem>
+                    <SelectItem value="Basic">Basic - ₹2999/month</SelectItem>
+                    <SelectItem value="Premium">Premium - ₹4999/month</SelectItem>
+                    <SelectItem value="VIP">VIP - ₹7999/month</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -217,7 +216,7 @@ const PaymentTracking = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="font-medium">Amount:</span>
-                      <p className="text-green-600 font-bold">${payment.amount}</p>
+                      <p className="text-green-600 font-bold">₹{payment.amount}</p>
                     </div>
                     <div>
                       <span className="font-medium">Date:</span>

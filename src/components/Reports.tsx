@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -91,7 +90,7 @@ const Reports = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Revenue"
-          value={`$${weeklyData.revenue}`}
+          value={`₹${weeklyData.revenue}`}
           change={weeklyData.revenueChange}
           icon={DollarSign}
           color="text-green-600"

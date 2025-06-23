@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,7 +101,7 @@ const TrainerManagement = () => {
             <CardTitle className="text-sm font-medium">Monthly Earnings</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">${totalEarnings}</div>
+            <div className="text-2xl font-bold text-green-600">₹{totalEarnings}</div>
             <p className="text-xs text-gray-500">Total trainer payments</p>
           </CardContent>
         </Card>
@@ -222,7 +221,7 @@ const TrainerManagement = () => {
                 </div>
                 <div>
                   <span className="font-medium">Rate:</span>
-                  <p className="text-emerald-600 font-semibold">${trainer.hourlyRate}/hr</p>
+                  <p className="text-emerald-600 font-semibold">₹{trainer.hourlyRate}/hr</p>
                 </div>
                 <div>
                   <span className="font-medium">Sessions:</span>
@@ -237,7 +236,7 @@ const TrainerManagement = () => {
               <div className="pt-2 border-t">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">Monthly Earnings:</span>
-                  <span className="text-green-600 font-bold">${trainer.monthlyEarnings}</span>
+                  <span className="text-green-600 font-bold">₹{trainer.monthlyEarnings}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">Joined:</span>
