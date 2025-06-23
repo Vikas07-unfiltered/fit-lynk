@@ -61,15 +61,6 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
             />
           </div>
           <div>
-            <Label htmlFor="whatsapp">WhatsApp Number</Label>
-            <Input
-              id="whatsapp"
-              value={newMember.whatsapp_number}
-              onChange={(e) => setNewMember({ ...newMember, whatsapp_number: e.target.value })}
-              placeholder="+1234567890 (for payment reminders)"
-            />
-          </div>
-          <div>
             <Label htmlFor="plan">Membership Plan *</Label>
             <Select onValueChange={(value) => setNewMember({ ...newMember, plan: value })}>
               <SelectTrigger>
