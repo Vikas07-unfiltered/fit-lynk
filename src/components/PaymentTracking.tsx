@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, DollarSign, Bell } from 'lucide-react';
+import { Search, Plus, IndianRupee, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Payment {
@@ -134,7 +134,7 @@ const PaymentTracking = () => {
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-emerald-600 hover:bg-emerald-700">
-              <Plus className="w-4 h-4 mr-2" />
+              <IndianRupee className="w-4 h-4 mr-2" />
               Record Payment
             </Button>
           </DialogTrigger>
@@ -205,7 +205,7 @@ const PaymentTracking = () => {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-400 rounded-full flex items-center justify-center">
-                      <DollarSign className="w-5 h-5 text-white" />
+                      <IndianRupee className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <h3 className="font-semibold">{payment.memberName}</h3>
@@ -254,7 +254,7 @@ const PaymentTracking = () => {
 
       {filteredPayments.length === 0 && (
         <Card className="p-8 text-center">
-          <DollarSign className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <IndianRupee className="w-12 h-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
           <p className="text-gray-600">Record your first payment to get started</p>
         </Card>
