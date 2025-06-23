@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 interface Member {
   id: string;
+  user_id: string;
   name: string;
   phone: string;
   plan: string;
@@ -19,7 +20,7 @@ interface QRCodeGeneratorProps {
 
 const QRCodeGenerator = ({ member, isOpen, onClose }: QRCodeGeneratorProps) => {
   const qrData = JSON.stringify({
-    id: member.id,
+    id: member.user_id,
     name: member.name,
     plan: member.plan
   });
@@ -50,6 +51,7 @@ const QRCodeGenerator = ({ member, isOpen, onClose }: QRCodeGeneratorProps) => {
               <div className="mb-4">
                 <h3 className="font-semibold text-lg">{member.name}</h3>
                 <p className="text-gray-600">{member.plan} Plan</p>
+                <p className="text-emerald-600 font-semibold">ID: {member.user_id}</p>
               </div>
               
               {/* QR Code placeholder - in a real app, use a QR code library */}
@@ -64,7 +66,7 @@ const QRCodeGenerator = ({ member, isOpen, onClose }: QRCodeGeneratorProps) => {
               </p>
               
               <div className="text-xs bg-gray-100 p-2 rounded font-mono break-all">
-                Member ID: {member.id}
+                Member ID: {member.user_id}
               </div>
             </CardContent>
           </Card>

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,67 +7,70 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, User, Calendar } from 'lucide-react';
+import { Search, Plus, User, Calendar, Phone } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import QRCodeGenerator from './QRCodeGenerator';
 
 interface Member {
   id: string;
+  user_id: string;
   name: string;
   phone: string;
+  whatsapp_number?: string;
   plan: string;
   status: 'active' | 'inactive' | 'pending';
-  joinDate: string;
-  lastPayment: string;
-  photo?: string;
+  join_date: string;
+  last_payment: string | null;
+  photo_url?: string;
 }
 
 const MemberManagement = () => {
-  const [members, setMembers] = useState<Member[]>([
-    {
-      id: '1',
-      name: 'John Doe',
-      phone: '+1234567890',
-      plan: 'Premium',
-      status: 'active',
-      joinDate: '2024-01-15',
-      lastPayment: '2024-06-01',
-    },
-    {
-      id: '2',
-      name: 'Jane Smith',
-      phone: '+1234567891',
-      plan: 'Basic',
-      status: 'active',
-      joinDate: '2024-02-20',
-      lastPayment: '2024-06-05',
-    },
-    {
-      id: '3',
-      name: 'Mike Johnson',
-      phone: '+1234567892',
-      plan: 'Premium',
-      status: 'pending',
-      joinDate: '2024-06-20',
-      lastPayment: '2024-06-20',
-    }
-  ]);
-
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [newMember, setNewMember] = useState({
     name: '',
     phone: '',
+    whatsapp_number: '',
     plan: '',
   });
 
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch members",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.phone.includes(searchTerm)
+    member.phone.includes(searchTerm) ||
+    member.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (member.whatsapp_number && member.whatsapp_number.includes(searchTerm))
   );
 
-  const handleAddMember = () => {
+  const handleAddMember = async () => {
     if (!newMember.name || !newMember.phone || !newMember.plan) {
       toast({
         title: "Error",
@@ -77,24 +80,40 @@ const MemberManagement = () => {
       return;
     }
 
-    const member: Member = {
-      id: Date.now().toString(),
-      name: newMember.name,
-      phone: newMember.phone,
-      plan: newMember.plan,
-      status: 'active',
-      joinDate: new Date().toISOString().split('T')[0],
-      lastPayment: new Date().toISOString().split('T')[0],
-    };
+    try {
+      const memberData = {
+        name: newMember.name,
+        phone: newMember.phone,
+        whatsapp_number: newMember.whatsapp_number || null,
+        plan: newMember.plan,
+        status: 'active',
+        last_payment: new Date().toISOString().split('T')[0],
+      };
 
-    setMembers([...members, member]);
-    setNewMember({ name: '', phone: '', plan: '' });
-    setIsAddDialogOpen(false);
-    
-    toast({
-      title: "Success",
-      description: "Member added successfully",
-    });
+      const { data, error } = await supabase
+        .from('members')
+        .insert([memberData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setMembers([data, ...members]);
+      setNewMember({ name: '', phone: '', whatsapp_number: '', plan: '' });
+      setIsAddDialogOpen(false);
+      
+      toast({
+        title: "Success",
+        description: `Member added successfully with ID: ${data.user_id}`,
+      });
+    } catch (error) {
+      console.error('Error adding member:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add member",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -106,13 +125,21 @@ const MemberManagement = () => {
     return variants[status as keyof typeof variants] || '';
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-lg">Loading members...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
-            placeholder="Search members..."
+            placeholder="Search by name, phone, or member ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -132,7 +159,7 @@ const MemberManagement = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">Full Name *</Label>
                 <Input
                   id="name"
                   value={newMember.name}
@@ -141,7 +168,7 @@ const MemberManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">Phone Number *</Label>
                 <Input
                   id="phone"
                   value={newMember.phone}
@@ -150,7 +177,16 @@ const MemberManagement = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="plan">Membership Plan</Label>
+                <Label htmlFor="whatsapp">WhatsApp Number</Label>
+                <Input
+                  id="whatsapp"
+                  value={newMember.whatsapp_number}
+                  onChange={(e) => setNewMember({ ...newMember, whatsapp_number: e.target.value })}
+                  placeholder="+1234567890 (for payment reminders)"
+                />
+              </div>
+              <div>
+                <Label htmlFor="plan">Membership Plan *</Label>
                 <Select onValueChange={(value) => setNewMember({ ...newMember, plan: value })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a plan" />
@@ -181,7 +217,7 @@ const MemberManagement = () => {
                   </div>
                   <div>
                     <CardTitle className="text-lg">{member.name}</CardTitle>
-                    <p className="text-sm text-gray-600">{member.phone}</p>
+                    <p className="text-sm text-emerald-600 font-semibold">ID: {member.user_id}</p>
                   </div>
                 </div>
                 <Badge className={getStatusBadge(member.status)}>
@@ -195,12 +231,25 @@ const MemberManagement = () => {
                 <span className="text-emerald-600 font-semibold">{member.plan}</span>
               </div>
               <div className="flex justify-between text-sm">
+                <span className="font-medium">Phone:</span>
+                <span>{member.phone}</span>
+              </div>
+              {member.whatsapp_number && (
+                <div className="flex justify-between text-sm">
+                  <span className="font-medium">WhatsApp:</span>
+                  <span className="flex items-center">
+                    <Phone className="w-3 h-3 mr-1 text-green-600" />
+                    {member.whatsapp_number}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
                 <span className="font-medium">Joined:</span>
-                <span>{member.joinDate}</span>
+                <span>{member.join_date}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="font-medium">Last Payment:</span>
-                <span>{member.lastPayment}</span>
+                <span>{member.last_payment || 'No payment'}</span>
               </div>
               <div className="flex gap-2 pt-2">
                 <Button
@@ -226,7 +275,7 @@ const MemberManagement = () => {
         />
       )}
 
-      {filteredMembers.length === 0 && (
+      {filteredMembers.length === 0 && !loading && (
         <Card className="p-8 text-center">
           <User className="w-12 h-12 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No members found</h3>
