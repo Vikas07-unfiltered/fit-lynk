@@ -17,8 +17,7 @@ const MemberManagement = () => {
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.phone.includes(searchTerm) ||
-    member.user_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (member.whatsapp_number && member.whatsapp_number.includes(searchTerm))
+    member.user_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   if (loading) {

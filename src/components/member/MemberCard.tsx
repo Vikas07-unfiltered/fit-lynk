@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Calendar, Phone } from 'lucide-react';
+import { User, Calendar } from 'lucide-react';
 import { Member } from '@/types/member';
 
 interface MemberCardProps {
@@ -47,15 +47,6 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
           <span className="font-medium">Phone:</span>
           <span>{member.phone}</span>
         </div>
-        {member.whatsapp_number && (
-          <div className="flex justify-between text-sm">
-            <span className="font-medium">WhatsApp:</span>
-            <span className="flex items-center">
-              <Phone className="w-3 h-3 mr-1 text-green-600" />
-              {member.whatsapp_number}
-            </span>
-          </div>
-        )}
         <div className="flex justify-between text-sm">
           <span className="font-medium">Joined:</span>
           <span>{member.join_date}</span>

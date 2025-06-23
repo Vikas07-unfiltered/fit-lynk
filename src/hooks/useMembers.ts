@@ -46,8 +46,7 @@ export const useMembers = () => {
         phone: newMemberData.phone,
         plan: newMemberData.plan,
         status: 'active',
-        last_payment: new Date().toISOString().split('T')[0],
-        ...(newMemberData.whatsapp_number && { whatsapp_number: newMemberData.whatsapp_number })
+        last_payment: new Date().toISOString().split('T')[0]
       };
 
       const { data, error } = await supabase

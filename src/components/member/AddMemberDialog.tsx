@@ -17,14 +17,13 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
   const [newMember, setNewMember] = useState<NewMember>({
     name: '',
     phone: '',
-    whatsapp_number: '',
     plan: '',
   });
 
   const handleAddMember = async () => {
     const success = await onAddMember(newMember);
     if (success) {
-      setNewMember({ name: '', phone: '', whatsapp_number: '', plan: '' });
+      setNewMember({ name: '', phone: '', plan: '' });
       setIsOpen(false);
     }
   };

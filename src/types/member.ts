@@ -4,7 +4,6 @@ export interface Member {
   user_id: string;
   name: string;
   phone: string;
-  whatsapp_number?: string;
   plan: string;
   status: string;
   join_date: string;
@@ -15,6 +14,5 @@ export interface Member {
 export interface NewMember {
   name: string;
   phone: string;
-  whatsapp_number: string;
   plan: string;
 }
