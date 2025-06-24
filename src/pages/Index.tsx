@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, CreditCard, BarChart3, Settings } from 'lucide-react';
+import { Users, Calendar, chart-bar, bar-chart, Settings } from 'lucide-react';
 import MemberManagement from '@/components/MemberManagement';
 import AttendanceTracker from '@/components/AttendanceTracker';
 import PaymentTracking from '@/components/PaymentTracking';
@@ -10,9 +10,10 @@ import Reports from '@/components/Reports';
 import TrainerManagement from '@/components/TrainerManagement';
 import PlanManagement from '@/components/PlanManagement';
 import GymHeader from '@/components/GymHeader';
+import DashboardOverview from '@/components/DashboardOverview';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('members');
+  const [activeTab, setActiveTab] = useState('overview');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50">
@@ -25,7 +26,11 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-1">
+            <TabsTrigger value="overview" className="flex items-center gap-2">
+              <home className="w-4 h-4" />
+              <span className="hidden sm:inline">Overview</span>
+            </TabsTrigger>
             <TabsTrigger value="members" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Members</span>
@@ -39,11 +44,11 @@ const Index = () => {
               <span className="hidden sm:inline">Attendance</span>
             </TabsTrigger>
             <TabsTrigger value="payments" className="flex items-center gap-2">
-              <CreditCard className="w-4 h-4" />
+              <chart-bar className="w-4 h-4" />
               <span className="hidden sm:inline">Payments</span>
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
+              <bar-chart className="w-4 h-4" />
               <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
             <TabsTrigger value="trainers" className="flex items-center gap-2">
@@ -51,6 +56,10 @@ const Index = () => {
               <span className="hidden sm:inline">Trainers</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="overview">
+            <DashboardOverview />
+          </TabsContent>
 
           <TabsContent value="members">
             <Card>
