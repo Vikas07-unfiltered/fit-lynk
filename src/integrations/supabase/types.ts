@@ -77,42 +77,51 @@ export type Database = {
       members: {
         Row: {
           created_at: string
+          expiry_notification_sent: boolean | null
           gym_id: string | null
           id: string
           join_date: string
           last_payment: string | null
           name: string
+          notification_sent_at: string | null
           phone: string
           photo_url: string | null
           plan: string
+          plan_expiry_date: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          expiry_notification_sent?: boolean | null
           gym_id?: string | null
           id?: string
           join_date?: string
           last_payment?: string | null
           name: string
+          notification_sent_at?: string | null
           phone: string
           photo_url?: string | null
           plan: string
+          plan_expiry_date?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          expiry_notification_sent?: boolean | null
           gym_id?: string | null
           id?: string
           join_date?: string
           last_payment?: string | null
           name?: string
+          notification_sent_at?: string | null
           phone?: string
           photo_url?: string | null
           plan?: string
+          plan_expiry_date?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -176,6 +185,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_plan_expiry: {
+        Args: { p_join_date: string; p_plan_name: string; p_gym_id: string }
+        Returns: string
+      }
       generate_gym_member_id: {
         Args: { p_gym_id: string }
         Returns: string
@@ -183,6 +196,21 @@ export type Database = {
       generate_member_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_expiring_members: {
+        Args: { days_before?: number }
+        Returns: {
+          member_id: string
+          member_name: string
+          member_phone: string
+          gym_id: string
+          plan_name: string
+          expiry_date: string
+        }[]
+      }
+      mark_notification_sent: {
+        Args: { member_id: string }
+        Returns: undefined
       }
     }
     Enums: {
