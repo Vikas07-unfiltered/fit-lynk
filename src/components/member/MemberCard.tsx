@@ -2,8 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Calendar } from 'lucide-react';
+import { User, Calendar, Bell } from 'lucide-react';
 import { Member } from '@/types/member';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 interface MemberCardProps {
   member: Member;
@@ -11,6 +14,8 @@ interface MemberCardProps {
 }
 
 const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
+
   const getStatusBadge = (status: string) => {
     const variants = {
       active: 'bg-green-100 text-green-800',
@@ -18,6 +23,34 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
       pending: 'bg-yellow-100 text-yellow-800',
     };
     return variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800';
+  };
+
+  const sendIndividualNotification = async () => {
+    setIsSendingNotification(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-expiry-notifications', {
+        body: {
+          member_id: member.id,
+          individual_notification: true
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Notification sent to ${member.name}`,
+      });
+    } catch (error) {
+      console.error('Error sending individual notification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send notification",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingNotification(false);
+    }
   };
 
   return (
@@ -64,6 +97,15 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
           >
             <Calendar className="w-4 h-4 mr-1" />
             QR Code
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={sendIndividualNotification}
+            disabled={isSendingNotification}
+            className="border-orange-500 text-orange-600 hover:bg-orange-50"
+          >
+            <Bell className="w-4 h-4" />
           </Button>
         </div>
       </CardContent>

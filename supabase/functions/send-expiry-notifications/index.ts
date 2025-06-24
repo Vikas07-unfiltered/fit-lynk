@@ -27,25 +27,68 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    console.log('Starting expiry notification check...')
+    const requestBody = await req.json().catch(() => ({}))
+    const isIndividualNotification = requestBody.individual_notification === true
+    const specificMemberId = requestBody.member_id
 
-    // Get all members whose plans expire in 5 days
-    const { data: expiringMembers, error: membersError } = await supabaseClient
-      .rpc('get_expiring_members', { days_before: 5 })
+    console.log('Starting notification process...', {
+      isIndividual: isIndividualNotification,
+      memberId: specificMemberId
+    })
 
-    if (membersError) {
-      console.error('Error fetching expiring members:', membersError)
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch expiring members' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    let expiringMembers: ExpiringMember[] = []
+
+    if (isIndividualNotification && specificMemberId) {
+      // Get specific member for individual notification
+      const { data: member, error: memberError } = await supabaseClient
+        .from('members')
+        .select('id, name, phone, gym_id, plan, plan_expiry_date')
+        .eq('id', specificMemberId)
+        .eq('status', 'active')
+        .single()
+
+      if (memberError) {
+        console.error('Error fetching specific member:', memberError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch member' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      if (member) {
+        expiringMembers = [{
+          member_id: member.id,
+          member_name: member.name,
+          member_phone: member.phone,
+          gym_id: member.gym_id,
+          plan_name: member.plan,
+          expiry_date: member.plan_expiry_date
+        }]
+      }
+    } else {
+      // Get all members whose plans expire in 5 days (existing functionality)
+      const { data, error: membersError } = await supabaseClient
+        .rpc('get_expiring_members', { days_before: 5 })
+
+      if (membersError) {
+        console.error('Error fetching expiring members:', membersError)
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch expiring members' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      expiringMembers = data || []
     }
 
-    console.log(`Found ${expiringMembers?.length || 0} members with expiring plans`)
+    console.log(`Found ${expiringMembers?.length || 0} members to notify`)
 
     if (!expiringMembers || expiringMembers.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'No expiring memberships found', count: 0 }),
+        JSON.stringify({ 
+          message: isIndividualNotification ? 'Member not found or already notified' : 'No expiring memberships found', 
+          count: 0 
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -65,7 +108,7 @@ serve(async (req) => {
     let successCount = 0
     let errorCount = 0
 
-    // Send WhatsApp message to each expiring member
+    // Send WhatsApp message to each member
     for (const member of expiringMembers as ExpiringMember[]) {
       try {
         // Get gym details for personalized message
@@ -83,12 +126,21 @@ serve(async (req) => {
           phoneNumber = '91' + phoneNumber // Add India country code
         }
 
-        // Prepare WhatsApp message
-        const message = `🏋️ Hi ${member.member_name}!\n\n` +
-          `Your ${member.plan_name} membership at ${gymName} is expiring on ${new Date(member.expiry_date).toLocaleDateString()}.\n\n` +
-          `To continue enjoying our services, please renew your membership soon.\n\n` +
-          `Contact us for renewal or any questions!\n\n` +
-          `Thank you for being a valued member! 💪`
+        // Prepare different messages based on notification type
+        let message: string
+        if (isIndividualNotification) {
+          message = `🏋️ Hi ${member.member_name}!\n\n` +
+            `This is a friendly reminder from ${gymName}.\n\n` +
+            `Your ${member.plan_name} membership ${member.expiry_date ? `expires on ${new Date(member.expiry_date).toLocaleDateString()}` : 'requires attention'}.\n\n` +
+            `Please contact us if you need any assistance or have questions about your membership.\n\n` +
+            `Thank you for being a valued member! 💪`
+        } else {
+          message = `🏋️ Hi ${member.member_name}!\n\n` +
+            `Your ${member.plan_name} membership at ${gymName} is expiring on ${new Date(member.expiry_date).toLocaleDateString()}.\n\n` +
+            `To continue enjoying our services, please renew your membership soon.\n\n` +
+            `Contact us for renewal or any questions!\n\n` +
+            `Thank you for being a valued member! 💪`
+        }
 
         // Send WhatsApp message using Facebook Graph API
         const whatsappResponse = await fetch(
@@ -111,10 +163,12 @@ serve(async (req) => {
         )
 
         if (whatsappResponse.ok) {
-          // Mark notification as sent in database
-          await supabaseClient.rpc('mark_notification_sent', { 
-            member_id: member.member_id 
-          })
+          // For bulk notifications, mark as sent. For individual, don't mark to allow repeated sends
+          if (!isIndividualNotification) {
+            await supabaseClient.rpc('mark_notification_sent', { 
+              member_id: member.member_id 
+            })
+          }
           
           successCount++
           console.log(`✅ Notification sent to ${member.member_name} (${phoneNumber})`)
@@ -137,7 +191,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({
-        message: 'Expiry notifications processed',
+        message: isIndividualNotification ? 'Individual notification processed' : 'Expiry notifications processed',
         total_members: expiringMembers.length,
         successful_notifications: successCount,
         failed_notifications: errorCount
