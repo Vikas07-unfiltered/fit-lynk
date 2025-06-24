@@ -11,25 +11,11 @@ import { CalendarIcon, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { NewMember } from '@/types/member';
+import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 
 interface AddMemberDialogProps {
   onAddMember: (member: NewMember) => Promise<boolean>;
 }
-
-const membershipPlans = [
-  { value: 'Basic', label: 'Basic - ₹2999/month', price: 2999, duration: 1 },
-  { value: 'Premium', label: 'Premium - ₹4999/month', price: 4999, duration: 1 },
-  { value: 'VIP', label: 'VIP - ₹7999/month', price: 7999, duration: 1 },
-  { value: 'Basic-3', label: 'Basic - ₹8500/3 months', price: 8500, duration: 3 },
-  { value: 'Premium-3', label: 'Premium - ₹14500/3 months', price: 14500, duration: 3 },
-  { value: 'VIP-3', label: 'VIP - ₹23000/3 months', price: 23000, duration: 3 },
-  { value: 'Basic-6', label: 'Basic - ₹16500/6 months', price: 16500, duration: 6 },
-  { value: 'Premium-6', label: 'Premium - ₹28500/6 months', price: 28500, duration: 6 },
-  { value: 'VIP-6', label: 'VIP - ₹45000/6 months', price: 45000, duration: 6 },
-  { value: 'Basic-12', label: 'Basic - ₹32000/year', price: 32000, duration: 12 },
-  { value: 'Premium-12', label: 'Premium - ₹55000/year', price: 55000, duration: 12 },
-  { value: 'VIP-12', label: 'VIP - ₹85000/year', price: 85000, duration: 12 },
-];
 
 const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -40,6 +26,8 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
     phone: '',
     plan: '',
   });
+
+  const { plans, loading: plansLoading } = useMembershipPlans();
 
   const handleAddMember = async () => {
     const memberData = {
@@ -57,7 +45,7 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
     }
   };
 
-  const selectedPlan = membershipPlans.find(plan => plan.value === newMember.plan);
+  const selectedPlan = plans.find(plan => plan.id === newMember.plan);
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -147,50 +135,42 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
           </div>
 
           <div>
-            <Label htmlFor="plan">Membership Plan & Duration *</Label>
+            <Label htmlFor="plan">Membership Plan *</Label>
             <Select onValueChange={(value) => setNewMember({ ...newMember, plan: value })}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a plan and duration" />
+                <SelectValue placeholder="Select a membership plan" />
               </SelectTrigger>
               <SelectContent>
-                <div className="p-2 text-xs font-semibold text-gray-500 border-b">Monthly Plans</div>
-                {membershipPlans.filter(plan => plan.duration === 1).map((plan) => (
-                  <SelectItem key={plan.value} value={plan.value}>
-                    {plan.label}
-                  </SelectItem>
-                ))}
-                <div className="p-2 text-xs font-semibold text-gray-500 border-b mt-2">Quarterly Plans (10% off)</div>
-                {membershipPlans.filter(plan => plan.duration === 3).map((plan) => (
-                  <SelectItem key={plan.value} value={plan.value}>
-                    {plan.label}
-                  </SelectItem>
-                ))}
-                <div className="p-2 text-xs font-semibold text-gray-500 border-b mt-2">Half-Yearly Plans (15% off)</div>
-                {membershipPlans.filter(plan => plan.duration === 6).map((plan) => (
-                  <SelectItem key={plan.value} value={plan.value}>
-                    {plan.label}
-                  </SelectItem>
-                ))}
-                <div className="p-2 text-xs font-semibold text-gray-500 border-b mt-2">Annual Plans (20% off)</div>
-                {membershipPlans.filter(plan => plan.duration === 12).map((plan) => (
-                  <SelectItem key={plan.value} value={plan.value}>
-                    {plan.label}
-                  </SelectItem>
-                ))}
+                {plansLoading ? (
+                  <div className="p-2 text-sm text-gray-500">Loading plans...</div>
+                ) : plans.length === 0 ? (
+                  <div className="p-2 text-sm text-gray-500">No plans available. Please create a plan first.</div>
+                ) : (
+                  plans.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name} - ₹{plan.price.toLocaleString()}/{plan.duration_months} month{plan.duration_months > 1 ? 's' : ''}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             {selectedPlan && (
               <div className="mt-2 p-3 bg-emerald-50 rounded border text-sm">
                 <div className="font-medium text-emerald-800">Plan Details:</div>
                 <div className="text-emerald-700">
-                  Duration: {selectedPlan.duration} month{selectedPlan.duration > 1 ? 's' : ''}
+                  Duration: {selectedPlan.duration_months} month{selectedPlan.duration_months > 1 ? 's' : ''}
                 </div>
                 <div className="text-emerald-700">
                   Total Cost: ₹{selectedPlan.price.toLocaleString()}
                 </div>
                 <div className="text-emerald-700">
-                  Per Month: ₹{Math.round(selectedPlan.price / selectedPlan.duration).toLocaleString()}
+                  Per Month: ₹{Math.round(selectedPlan.price / selectedPlan.duration_months).toLocaleString()}
                 </div>
+                {selectedPlan.description && (
+                  <div className="text-emerald-700 mt-1">
+                    {selectedPlan.description}
+                  </div>
+                )}
               </div>
             )}
           </div>
