@@ -9,9 +9,75 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      gym_owners: {
+        Row: {
+          created_at: string
+          email: string
+          gym_id: string
+          id: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          gym_id: string
+          id?: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          gym_id?: string
+          id?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_owners_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gyms: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+          owner_email: string
+          owner_phone: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          owner_email: string
+          owner_phone: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          owner_email?: string
+          owner_phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       members: {
         Row: {
           created_at: string
+          gym_id: string | null
           id: string
           join_date: string
           last_payment: string | null
@@ -25,6 +91,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          gym_id?: string | null
           id?: string
           join_date?: string
           last_payment?: string | null
@@ -38,6 +105,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          gym_id?: string | null
           id?: string
           join_date?: string
           last_payment?: string | null
@@ -49,13 +117,25 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "members_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      generate_gym_member_id: {
+        Args: { p_gym_id: string }
+        Returns: string
+      }
       generate_member_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string

@@ -3,16 +3,24 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Member, NewMember } from '@/types/member';
+import { useAuth } from '@/hooks/useAuth';
 
 export const useMembers = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const { gym } = useAuth();
 
   const fetchMembers = async () => {
+    if (!gym?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('members')
         .select('*')
+        .eq('gym_id', gym.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -30,6 +38,15 @@ export const useMembers = () => {
   };
 
   const addMember = async (newMemberData: NewMember) => {
+    if (!gym?.id) {
+      toast({
+        title: "Error",
+        description: "No gym selected",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     if (!newMemberData.name || !newMemberData.phone || !newMemberData.plan) {
       toast({
         title: "Error",
@@ -41,6 +58,7 @@ export const useMembers = () => {
 
     try {
       const insertData = {
+        gym_id: gym.id,
         user_id: '', // This will be overridden by the database trigger
         name: newMemberData.name,
         phone: newMemberData.phone,
@@ -79,7 +97,7 @@ export const useMembers = () => {
 
   useEffect(() => {
     fetchMembers();
-  }, []);
+  }, [gym?.id]);
 
   return {
     members,
