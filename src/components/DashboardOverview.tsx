@@ -1,7 +1,9 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, TrendingUp, TrendingDown, Activity, BarChart } from 'lucide-react';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
 import ExpiryNotifications from './ExpiryNotifications';
+import TestDataGenerator from './TestDataGenerator';
 
 const DashboardOverview = () => {
   const { analytics, loading } = useDashboardAnalytics();
@@ -114,6 +116,9 @@ const DashboardOverview = () => {
           color="text-purple-600"
         />
       </div>
+
+      {/* Add Test Data Generator */}
+      <TestDataGenerator />
 
       {/* Add Expiry Notifications Section */}
       <ExpiryNotifications />
