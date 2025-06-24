@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, trending-up, trending-down, activity, chart-bar } from 'lucide-react';
+import { Users, TrendingUp, TrendingDown, Activity, BarChart } from 'lucide-react';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
 
 const DashboardOverview = () => {
@@ -55,9 +55,9 @@ const DashboardOverview = () => {
         {change !== undefined && (
           <div className="flex items-center text-sm">
             {change > 0 ? (
-              <trending-up className="w-3 h-3 text-green-600 mr-1" />
+              <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
             ) : change < 0 ? (
-              <trending-down className="w-3 h-3 text-red-600 mr-1" />
+              <TrendingDown className="w-3 h-3 text-red-600 mr-1" />
             ) : null}
             {change !== 0 && (
               <>
@@ -95,14 +95,14 @@ const DashboardOverview = () => {
         <StatCard
           title="Active Members"
           value={analytics.activeMembers}
-          icon={activity}
+          icon={Activity}
           color="text-green-600"
         />
         
         <StatCard
           title="Monthly Revenue"
           value={Math.round(analytics.monthlyRevenue)}
-          icon={chart-bar}
+          icon={BarChart}
           color="text-emerald-600"
           prefix="₹"
         />
@@ -110,7 +110,7 @@ const DashboardOverview = () => {
         <StatCard
           title="Membership Plans"
           value={analytics.totalPlans}
-          icon={trending-up}
+          icon={TrendingUp}
           color="text-purple-600"
         />
       </div>

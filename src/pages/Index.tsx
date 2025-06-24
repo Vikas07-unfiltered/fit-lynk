@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, chart-bar, bar-chart, Settings } from 'lucide-react';
+import { Users, Calendar, BarChart, Home, Settings } from 'lucide-react';
 import MemberManagement from '@/components/MemberManagement';
 import AttendanceTracker from '@/components/AttendanceTracker';
 import PaymentTracking from '@/components/PaymentTracking';
@@ -28,7 +28,7 @@ const Index = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-1">
             <TabsTrigger value="overview" className="flex items-center gap-2">
-              <home className="w-4 h-4" />
+              <Home className="w-4 h-4" />
               <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
             <TabsTrigger value="members" className="flex items-center gap-2">
@@ -44,11 +44,11 @@ const Index = () => {
               <span className="hidden sm:inline">Attendance</span>
             </TabsTrigger>
             <TabsTrigger value="payments" className="flex items-center gap-2">
-              <chart-bar className="w-4 h-4" />
+              <BarChart className="w-4 h-4" />
               <span className="hidden sm:inline">Payments</span>
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
-              <bar-chart className="w-4 h-4" />
+              <BarChart className="w-4 h-4" />
               <span className="hidden sm:inline">Reports</span>
             </TabsTrigger>
             <TabsTrigger value="trainers" className="flex items-center gap-2">
