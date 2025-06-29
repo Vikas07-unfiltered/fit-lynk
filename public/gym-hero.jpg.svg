@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="24" fill="#0F172A"/>
+  <g>
+    <circle cx="64" cy="64" r="40" fill="#10B981"/>
+    <path d="M64 44c11.046 0 20 8.954 20 20s-8.954 20-20 20-20-8.954-20-20 8.954-20 20-20zm0 8a12 12 0 100 24 12 12 0 000-24z" fill="#fff"/>
+    <rect x="56" y="72" width="16" height="8" rx="4" fill="#fff"/>
+    <rect x="56" y="48" width="16" height="8" rx="4" fill="#fff"/>
+  </g>
+  <text x="64" y="120" text-anchor="middle" font-size="16" fill="#fff" font-family="Arial, Helvetica, sans-serif">Fit-Lynk</text>
+</svg>
