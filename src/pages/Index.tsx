@@ -8,7 +8,6 @@ import AttendanceTracker from '@/components/AttendanceTracker';
 import PaymentTracking from '@/components/PaymentTracking';
 import Reports from '@/components/Reports';
 import TrainerManagement from '@/components/TrainerManagement';
-import PlanManagement from '@/components/PlanManagement';
 import GymHeader from '@/components/GymHeader';
 import DashboardOverview from '@/components/DashboardOverview';
 
@@ -26,7 +25,7 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-1">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
             <TabsTrigger value="overview" className="flex items-center gap-2">
               <Home className="w-4 h-4" />
               <span className="hidden sm:inline">Overview</span>
@@ -34,10 +33,6 @@ const Index = () => {
             <TabsTrigger value="members" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Members</span>
-            </TabsTrigger>
-            <TabsTrigger value="plans" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
-              <span className="hidden sm:inline">Plans</span>
             </TabsTrigger>
             <TabsTrigger value="attendance" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -69,18 +64,6 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <MemberManagement />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="plans">
-            <Card>
-              <CardHeader>
-                <CardTitle>Membership Plans</CardTitle>
-                <CardDescription>Create and manage membership plans and pricing</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PlanManagement />
               </CardContent>
             </Card>
           </TabsContent>

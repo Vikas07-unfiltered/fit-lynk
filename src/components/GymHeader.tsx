@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Building, LogOut, Settings } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const GymHeader = () => {
   const { gym, user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   if (!gym || !user) return null;
 
@@ -26,7 +28,7 @@ const GymHeader = () => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
             <Settings className="w-4 h-4 mr-1" />
             Settings
           </Button>

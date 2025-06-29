@@ -2,11 +2,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, TrendingUp, TrendingDown, Activity, BarChart } from 'lucide-react';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
-import ExpiryNotifications from './ExpiryNotifications';
-import TestDataGenerator from './TestDataGenerator';
+import { useMembershipPlans } from '@/hooks/useMembershipPlans';
+
 
 const DashboardOverview = () => {
   const { analytics, loading } = useDashboardAnalytics();
+  const { plans } = useMembershipPlans();
 
   if (loading) {
     return (
@@ -117,11 +118,7 @@ const DashboardOverview = () => {
         />
       </div>
 
-      {/* Add Test Data Generator */}
-      <TestDataGenerator />
 
-      {/* Add Expiry Notifications Section */}
-      <ExpiryNotifications />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card>
@@ -154,7 +151,11 @@ const DashboardOverview = () => {
             {analytics.mostPopularPlan ? (
               <div className="text-center">
                 <div className="text-2xl font-bold text-emerald-600 mb-2">
-                  {analytics.mostPopularPlan}
+                  {/* Show plan name if mostPopularPlan is an id */}
+                  {(() => {
+                    const plan = plans.find(p => p.id === analytics.mostPopularPlan);
+                    return plan ? plan.name : analytics.mostPopularPlan;
+                  })()}
                 </div>
                 <p className="text-sm text-gray-600">Most chosen by members</p>
               </div>
