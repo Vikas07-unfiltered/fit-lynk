@@ -13,8 +13,17 @@ import ScanAttendance from './pages/ScanAttendance';
 
 const queryClient = new QueryClient();
 
+import { useLocation } from "react-router-dom";
+// ...other imports remain unchanged
+
 const AppContent = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
+
+  // Always allow /scan-attendance to be public
+  if (location.pathname === "/scan-attendance") {
+    return <ScanAttendance />;
+  }
 
   if (loading) {
     return (
@@ -33,7 +42,6 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/scan-attendance" element={<ScanAttendance />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
