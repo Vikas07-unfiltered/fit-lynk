@@ -5,10 +5,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-// TODO: Replace with your actual Supabase URL and anon key
+// TODO: Replace with your actual Supabase anon key below
 const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL || '',
-  process.env.REACT_APP_SUPABASE_ANON_KEY || ''
+  'https://ahuwcoocemayyphdrmjz.supabase.co',
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFodXdjb29jZW1heXlwaGRybWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MDQ4NzIsImV4cCI6MjA2NjI4MDg3Mn0.vE-fSJMD91TZicpK6eLyHZi7tprfh4hVi_wjRolj_2w"
 );
 
 function useQuery() {
