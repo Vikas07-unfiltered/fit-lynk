@@ -43,7 +43,7 @@ const ScanAttendance: React.FC = () => {
       },
     ]);
     if (insertError) {
-      setError('Failed to record attendance. Please try again.');
+      setError('Failed to record attendance: ' + insertError.message);
     } else {
       setSuccess('Attendance recorded successfully!');
       setMemberId('');
