@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import AuthPage from "./components/AuthPage";
 import Settings from './pages/Settings';
 import NotFound from "./pages/NotFound";
+import ScanAttendance from './pages/ScanAttendance';
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/scan-attendance" element={<ScanAttendance />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
