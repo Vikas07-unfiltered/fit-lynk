@@ -1,5 +1,7 @@
 
 import { useState } from 'react';
+import { QRCodeCanvas } from 'qrcode.react';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +19,7 @@ interface AttendanceRecord {
 }
 
 const AttendanceTracker = () => {
+  const { gym } = useAuth();
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [qrScanMode, setQrScanMode] = useState(false);
@@ -259,7 +262,27 @@ const AttendanceTracker = () => {
           </CardContent>
         </Card>
       </div>
+    {/* QR Code for attendance marking */}
+    <div className="my-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Scan to Mark Attendance</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center">
+          {gym?.id ? (
+            <>
+              <QRCodeCanvas value={`${window.location.origin}/scan-attendance?gym_id=${gym.id}`} size={200} />
+              <div style={{ marginTop: 10, wordBreak: 'break-all', fontSize: 12 }}>
+                {`${window.location.origin}/scan-attendance?gym_id=${gym.id}`}
+              </div>
+            </>
+          ) : (
+            <div className="text-red-600">No gym selected. Please log in as a gym owner.</div>
+          )}
+        </CardContent>
+      </Card>
     </div>
+  </div>
   );
 };
 
