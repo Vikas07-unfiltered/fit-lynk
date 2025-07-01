@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, BarChart, Home, Settings, CreditCard, TrendingUp, UserCheck } from 'lucide-react';
+import { Users, Calendar, CreditCard, Home, TrendingUp, UserCheck } from 'lucide-react';
 import MemberManagement from '@/components/MemberManagement';
 import AttendanceTracker from '@/components/AttendanceTracker';
 import PaymentTracking from '@/components/PaymentTracking';
@@ -9,7 +10,6 @@ import Reports from '@/components/Reports';
 import TrainerManagement from '@/components/TrainerManagement';
 import GymHeader from '@/components/GymHeader';
 import DashboardOverview from '@/components/DashboardOverview';
-import AdvancedAnalytics from '@/components/AdvancedAnalytics';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -18,7 +18,6 @@ const Index = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Home },
-    { id: 'analytics', label: 'Analytics', icon: BarChart },
     { id: 'members', label: 'Members', icon: Users },
     { id: 'attendance', label: 'Attendance', icon: Calendar },
     { id: 'payments', label: 'Payments', icon: CreditCard },
@@ -80,20 +79,6 @@ const Index = () => {
             <DashboardOverview />
           </TabsContent>
 
-          <TabsContent value="analytics" className="mt-4">
-            <Card>
-              <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
-                <CardTitle className={isMobile ? 'text-lg' : ''}>Advanced Analytics</CardTitle>
-                <CardDescription className={isMobile ? 'text-sm' : ''}>
-                  {isMobile ? 'Detailed insights and trends' : 'Comprehensive analytics, insights, and performance trends'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
-                <AdvancedAnalytics />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
           <TabsContent value="members" className="mt-4">
             <Card>
               <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
@@ -141,7 +126,7 @@ const Index = () => {
               <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
                 <CardTitle className={isMobile ? 'text-lg' : ''}>Reports & Analytics</CardTitle>
                 <CardDescription className={isMobile ? 'text-sm' : ''}>
-                  {isMobile ? 'View performance metrics' : 'View performance metrics and generate reports'}
+                  {isMobile ? 'Comprehensive insights' : 'Comprehensive analytics, insights, and performance trends'}
                 </CardDescription>
               </CardHeader>
               <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
