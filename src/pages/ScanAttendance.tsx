@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // TODO: Replace with your actual Supabase anon key below
 const supabase = createClient(
@@ -22,6 +24,7 @@ const ScanAttendance: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const isMobile = useIsMobile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,15 +55,19 @@ const ScanAttendance: React.FC = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Mark Your Attendance</CardTitle>
+    <div className={`flex justify-center items-center min-h-screen bg-gray-50 ${isMobile ? 'px-4' : ''}`}>
+      <Card className={`w-full ${isMobile ? 'max-w-sm' : 'max-w-md'}`}>
+        <CardHeader className={isMobile ? 'pb-4' : ''}>
+          <CardTitle className={`${isMobile ? 'text-lg text-center' : ''}`}>
+            Mark Your Attendance
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <label htmlFor="memberId" className="block mb-2 font-medium">Member ID</label>
+              <label htmlFor="memberId" className={`block mb-2 font-medium ${isMobile ? 'text-sm' : ''}`}>
+                Member ID
+              </label>
               <Input
                 id="memberId"
                 type="text"
@@ -68,13 +75,26 @@ const ScanAttendance: React.FC = () => {
                 onChange={e => setMemberId(e.target.value)}
                 placeholder="Enter your Member ID"
                 required
+                className={isMobile ? 'h-12 text-base' : ''}
               />
             </div>
-            <Button type="submit" disabled={loading}>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className={`${isMobile ? 'h-12 text-base' : ''}`}
+            >
               {loading ? 'Submitting...' : 'Submit Attendance'}
             </Button>
-            {success && <div className="text-green-600 mt-2">{success}</div>}
-            {error && <div className="text-red-600 mt-2">{error}</div>}
+            {success && (
+              <div className={`text-green-600 mt-2 ${isMobile ? 'text-sm' : ''}`}>
+                {success}
+              </div>
+            )}
+            {error && (
+              <div className={`text-red-600 mt-2 ${isMobile ? 'text-sm' : ''}`}>
+                {error}
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
