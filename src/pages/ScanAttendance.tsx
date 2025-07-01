@@ -33,6 +33,20 @@ const ScanAttendance: React.FC = () => {
       setLoading(false);
       return;
     }
+    // Check if member exists
+    const { data: memberData, error: memberError } = await supabase
+      .from('members')
+      .select('id')
+      .eq('gym_id', gymId)
+      .eq('user_id', memberId)
+      .single();
+
+    if (memberError || !memberData) {
+      setError('Member ID not found. Please enter a valid Member ID.');
+      setLoading(false);
+      return;
+    }
+
     // Insert attendance record
     const { error: insertError } = await supabase.from('attendance').insert([
       {

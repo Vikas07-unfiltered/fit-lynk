@@ -1,5 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useMembers } from '@/hooks/useMembers';
+import { supabase } from '@/integrations/supabase/client';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +26,8 @@ const AttendanceTracker = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [qrScanMode, setQrScanMode] = useState(false);
   const [manualMemberName, setManualMemberName] = useState('');
+  const { members } = useMembers();
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
   const todayRecords = attendanceRecords.filter(record => 
     record.date === new Date().toISOString().split('T')[0]
@@ -42,23 +46,43 @@ const AttendanceTracker = () => {
       });
       return;
     }
-
+    // Debug: log input and members
+    console.log('Manual check-in input:', manualMemberName);
+    console.log('Members:', members);
+    // Accept either member name, id, or user_id for active members (case-insensitive, ignore all whitespace)
+    const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase();
+    const input = normalize(manualMemberName);
+    const foundMember = members.find(m =>
+      m.status === 'active' && (
+        normalize(m.name) === input ||
+        normalize(m.id) === input ||
+        normalize(m.user_id) === input
+      )
+    );
+    if (!foundMember) {
+      toast({
+        title: "Error",
+        description: "Only active members can check in. Check the name, Member ID, or member status.",
+        variant: "destructive",
+      });
+      setShowMembersModal(true); // Show modal for debugging
+      return;
+    }
     const now = new Date();
     const record: AttendanceRecord = {
       id: Date.now().toString(),
-      memberName: manualMemberName,
+      memberName: foundMember.name,
       checkInTime: now.toTimeString().slice(0, 5),
       date: now.toISOString().split('T')[0],
     };
-
     setAttendanceRecords([record, ...attendanceRecords]);
     setManualMemberName('');
-    
     toast({
       title: "Success",
-      description: `${manualMemberName} checked in successfully`,
+      description: `${foundMember.name} checked in successfully`,
     });
   };
+
 
   const handleCheckOut = (recordId: string) => {
     const now = new Date();
@@ -103,8 +127,52 @@ const AttendanceTracker = () => {
                  todayRecords.filter(r => r.duration).length || 0,
   };
 
+  // Fetch attendance records from Supabase for the current gym
+  const fetchAttendance = async () => {
+    if (!gym?.id) return;
+    try {
+      const { data, error } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('gym_id', gym.id)
+        .order('timestamp', { ascending: false });
+      if (error) throw error;
+      // Map Supabase attendance rows to AttendanceRecord for UI
+      const mapped = (data || []).map((row: any) => ({
+        id: row.id,
+        memberName: row.member_id, // You may want to join with members for actual names
+        checkInTime: row.timestamp ? new Date(row.timestamp).toTimeString().slice(0, 5) : '',
+        checkOutTime: undefined, // Not implemented in your schema yet
+        date: row.timestamp ? new Date(row.timestamp).toISOString().split('T')[0] : '',
+        duration: undefined,
+      }));
+      setAttendanceRecords(mapped);
+      toast({
+        title: "Refreshed!",
+        description: "Attendance records loaded.",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.message || 'Failed to fetch attendance',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Fetch attendance on mount
+  useEffect(() => {
+    fetchAttendance();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gym?.id]);
+
   return (
     <div className="space-y-6">
+      <div className="flex justify-end mb-2">
+        <Button variant="outline" onClick={fetchAttendance}>
+          Refresh
+        </Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
@@ -145,6 +213,13 @@ const AttendanceTracker = () => {
             <CardTitle>Quick Check-in</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* QR code for public scan link */}
+            {gym?.id && (
+              <div className="flex flex-col items-center mb-2">
+                <QRCodeCanvas value={`${window.location.origin}/scan-attendance?gym_id=${gym.id}`} size={140} />
+                <div className="text-xs text-gray-500 mt-1">Scan to check in</div>
+              </div>
+            )}
             <div className="space-y-3">
               <Button
                 onClick={() => setQrScanMode(!qrScanMode)}
@@ -177,12 +252,21 @@ const AttendanceTracker = () => {
                   value={manualMemberName}
                   onChange={(e) => setManualMemberName(e.target.value)}
                 />
-                <Button
-                  onClick={handleManualCheckIn}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700"
-                >
-                  Manual Check-in
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleManualCheckIn}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    Manual Check-in
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowMembersModal(true)}
+                    className="whitespace-nowrap"
+                  >
+                    Show Members
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -282,8 +366,39 @@ const AttendanceTracker = () => {
         </CardContent>
       </Card>
     </div>
+    {/* Members Modal for debugging */}
+    {showMembersModal && (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: 'white', padding: 24, borderRadius: 8, maxHeight: '80vh', overflowY: 'auto', minWidth: 350 }}>
+          <h2 style={{ fontWeight: 600, marginBottom: 12 }}>Members List (debug)</h2>
+          <table style={{ width: '100%', fontSize: 13 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Name</th>
+                <th style={{ textAlign: 'left' }}>ID</th>
+                <th style={{ textAlign: 'left' }}>User ID</th>
+                <th style={{ textAlign: 'left' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.map(m => (
+                <tr key={m.id} style={{ background: m.status !== 'active' ? '#ffeaea' : undefined }}>
+                  <td>{m.name}</td>
+                  <td>{m.id}</td>
+                  <td>{m.user_id}</td>
+                  <td>{m.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div style={{ textAlign: 'right', marginTop: 16 }}>
+            <Button onClick={() => setShowMembersModal(false)}>Close</Button>
+          </div>
+        </div>
+      </div>
+    )}
   </div>
-  );
+);
 };
 
 export default AttendanceTracker;

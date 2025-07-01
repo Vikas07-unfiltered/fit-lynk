@@ -136,6 +136,46 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          id: string;
+          gym_id: string;
+          member_id: string;
+          timestamp: string;
+          method: string | null;
+        };
+        Insert: {
+          id?: string;
+          gym_id: string;
+          member_id: string;
+          timestamp?: string;
+          method?: string | null;
+        };
+        Update: {
+          id?: string;
+          gym_id?: string;
+          member_id?: string;
+          timestamp?: string;
+          method?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "attendance_gym_id_fkey",
+            columns: ["gym_id"],
+            isOneToOne: false,
+            referencedRelation: "gyms",
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_member_id_fkey",
+            columns: ["member_id"],
+            isOneToOne: false,
+            referencedRelation: "members",
+            referencedColumns: ["id"]
+          }
+        ];
+      };
+
       membership_plans: {
         Row: {
           created_at: string
