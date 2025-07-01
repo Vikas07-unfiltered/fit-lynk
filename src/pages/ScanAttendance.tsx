@@ -43,13 +43,13 @@ const ScanAttendance: React.FC = () => {
       try {
         console.log('Checking member:', memberId.trim(), 'for gym:', gymId);
         
-        // Get member details - check both user_id and id fields
+        // Get member details - search by user_id (the member ID field)
         const { data: memberData, error: memberError } = await supabase
           .from('members')
           .select('name, user_id, id')
           .eq('gym_id', gymId)
           .eq('status', 'active')
-          .or(`user_id.eq.${memberId.trim()},id.eq.${memberId.trim()}`)
+          .eq('user_id', memberId.trim())
           .single();
 
         console.log('Member lookup result:', memberData, memberError);
@@ -105,13 +105,13 @@ const ScanAttendance: React.FC = () => {
     }
 
     try {
-      // Get member details - check both user_id and id fields
+      // Get member details - search by user_id (the member ID field)
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('id, name, user_id')
         .eq('gym_id', gymId)
         .eq('status', 'active')
-        .or(`user_id.eq.${memberId.trim()},id.eq.${memberId.trim()}`)
+        .eq('user_id', memberId.trim())
         .single();
 
       if (memberError || !memberData) {
@@ -173,13 +173,13 @@ const ScanAttendance: React.FC = () => {
     }
 
     try {
-      // Get member details first
+      // Get member details first - search by user_id (the member ID field)
       const { data: memberData, error: memberError } = await supabase
         .from('members')
         .select('id, name, user_id')
         .eq('gym_id', gymId)
         .eq('status', 'active')
-        .or(`user_id.eq.${memberId.trim()},id.eq.${memberId.trim()}`)
+        .eq('user_id', memberId.trim())
         .single();
 
       if (memberError || !memberData) {
