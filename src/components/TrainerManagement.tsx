@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, User, DollarSign, Calendar } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Trainer {
   id: string;
@@ -32,6 +33,7 @@ const TrainerManagement = () => {
     specialty: '',
     hourlyRate: '',
   });
+  const isMobile = useIsMobile();
 
   const filteredTrainers = trainers.filter(trainer =>
     trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,34 +86,34 @@ const TrainerManagement = () => {
   const averageRating = trainers.length > 0 ? trainers.reduce((sum, trainer) => sum + trainer.rating, 0) / trainers.length : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-4">
+      <div className={`grid grid-cols-1 ${isMobile ? 'gap-3' : 'md:grid-cols-3 gap-4'}`}>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Trainers</CardTitle>
+          <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
+            <CardTitle className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>Total Trainers</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{trainers.length}</div>
+          <CardContent className={isMobile ? 'px-4 pb-3' : ''}>
+            <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-blue-600`}>{trainers.length}</div>
             <p className="text-xs text-gray-500">Active staff</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Earnings</CardTitle>
+          <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
+            <CardTitle className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>Monthly Earnings</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">₹{totalEarnings}</div>
+          <CardContent className={isMobile ? 'px-4 pb-3' : ''}>
+            <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-green-600`}>₹{totalEarnings}</div>
             <p className="text-xs text-gray-500">Total trainer payments</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
+          <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
+            <CardTitle className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>Average Rating</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
+          <CardContent className={isMobile ? 'px-4 pb-3' : ''}>
+            <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-yellow-600`}>
               {averageRating ? averageRating.toFixed(1) : '0.0'}
             </div>
             <p className="text-xs text-gray-500">Customer satisfaction</p>
@@ -119,51 +121,53 @@ const TrainerManagement = () => {
         </Card>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className={`flex ${isMobile ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 items-start ${isMobile ? '' : 'sm:items-center'} justify-between`}>
+        <div className={`relative flex-1 ${isMobile ? 'w-full' : 'max-w-md'}`}>
+          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
           <Input
             placeholder="Search trainers..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className={`${isMobile ? 'pl-12 h-12 text-base' : 'pl-10'}`}
           />
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? 'w-full h-12' : ''}`}>
+              <Plus className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-2`} />
               Add Trainer
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className={`${isMobile ? 'w-[95vw] max-w-none mx-auto' : 'sm:max-w-md'}`}>
             <DialogHeader>
-              <DialogTitle>Add New Trainer</DialogTitle>
+              <DialogTitle className={isMobile ? 'text-lg' : ''}>Add New Trainer</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name" className={isMobile ? 'text-sm' : ''}>Full Name</Label>
                 <Input
                   id="name"
                   value={newTrainer.name}
                   onChange={(e) => setNewTrainer({ ...newTrainer, name: e.target.value })}
                   placeholder="Enter full name"
+                  className={isMobile ? 'h-12 text-base mt-1' : ''}
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone" className={isMobile ? 'text-sm' : ''}>Phone Number</Label>
                 <Input
                   id="phone"
                   value={newTrainer.phone}
                   onChange={(e) => setNewTrainer({ ...newTrainer, phone: e.target.value })}
                   placeholder="+1234567890"
+                  className={isMobile ? 'h-12 text-base mt-1' : ''}
                 />
               </div>
               <div>
-                <Label htmlFor="specialty">Specialty</Label>
+                <Label htmlFor="specialty" className={isMobile ? 'text-sm' : ''}>Specialty</Label>
                 <Select onValueChange={(value) => setNewTrainer({ ...newTrainer, specialty: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className={isMobile ? 'h-12 text-base mt-1' : ''}>
                     <SelectValue placeholder="Select specialty" />
                   </SelectTrigger>
                   <SelectContent>
@@ -177,16 +181,20 @@ const TrainerManagement = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="hourlyRate">Hourly Rate ($)</Label>
+                <Label htmlFor="hourlyRate" className={isMobile ? 'text-sm' : ''}>Hourly Rate (₹)</Label>
                 <Input
                   id="hourlyRate"
                   type="number"
                   value={newTrainer.hourlyRate}
                   onChange={(e) => setNewTrainer({ ...newTrainer, hourlyRate: e.target.value })}
-                  placeholder="45"
+                  placeholder="500"
+                  className={isMobile ? 'h-12 text-base mt-1' : ''}
                 />
               </div>
-              <Button onClick={handleAddTrainer} className="w-full bg-emerald-600 hover:bg-emerald-700">
+              <Button 
+                onClick={handleAddTrainer} 
+                className={`w-full bg-emerald-600 hover:bg-emerald-700 ${isMobile ? 'h-12' : ''}`}
+              >
                 Add Trainer
               </Button>
             </div>
@@ -194,27 +202,27 @@ const TrainerManagement = () => {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'md:grid-cols-2 lg:grid-cols-3 gap-4'}`}>
         {filteredTrainers.map((trainer) => (
           <Card key={trainer.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
+            <CardHeader className={`${isMobile ? 'pb-3 px-4 pt-4' : 'pb-3'}`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-400 to-blue-400 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-white" />
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className={`${isMobile ? 'w-14 h-14' : 'w-12 h-12'} bg-gradient-to-r from-emerald-400 to-blue-400 rounded-full flex items-center justify-center`}>
+                    <User className={`${isMobile ? 'w-7 h-7' : 'w-6 h-6'} text-white`} />
                   </div>
-                  <div>
-                    <CardTitle className="text-lg">{trainer.name}</CardTitle>
-                    <p className="text-sm text-gray-600">{trainer.specialty}</p>
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className={`${isMobile ? 'text-base' : 'text-lg'} truncate`}>{trainer.name}</CardTitle>
+                    <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-gray-600 truncate`}>{trainer.specialty}</p>
                   </div>
                 </div>
-                <Badge className={getStatusBadge(trainer.status)}>
+                <Badge className={`${getStatusBadge(trainer.status)} ${isMobile ? 'text-xs' : ''} flex-shrink-0`}>
                   {trainer.status}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <CardContent className={`space-y-3 ${isMobile ? 'px-4 pb-4' : ''}`}>
+              <div className={`grid grid-cols-2 gap-4 ${isMobile ? 'text-sm' : 'text-sm'}`}>
                 <div>
                   <span className="font-medium">Phone:</span>
                   <p className="text-gray-600 truncate">{trainer.phone}</p>
@@ -233,24 +241,24 @@ const TrainerManagement = () => {
                 </div>
               </div>
               
-              <div className="pt-2 border-t">
-                <div className="flex justify-between text-sm">
+              <div className={`pt-2 border-t ${isMobile ? 'space-y-2' : ''}`}>
+                <div className={`flex justify-between ${isMobile ? 'text-sm' : 'text-sm'}`}>
                   <span className="font-medium">Monthly Earnings:</span>
                   <span className="text-green-600 font-bold">₹{trainer.monthlyEarnings}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className={`flex justify-between ${isMobile ? 'text-sm' : 'text-sm'}`}>
                   <span className="font-medium">Joined:</span>
                   <span>{trainer.joinDate}</span>
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <Button size="sm" variant="outline" className="flex-1">
-                  <Calendar className="w-4 h-4 mr-1" />
+              <div className={`flex gap-2 pt-2 ${isMobile ? 'flex-col' : ''}`}>
+                <Button size={isMobile ? "default" : "sm"} variant="outline" className={`flex-1 ${isMobile ? 'h-10' : ''}`}>
+                  <Calendar className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-1`} />
                   Schedule
                 </Button>
-                <Button size="sm" variant="outline" className="flex-1">
-                  <DollarSign className="w-4 h-4 mr-1" />
+                <Button size={isMobile ? "default" : "sm"} variant="outline" className={`flex-1 ${isMobile ? 'h-10' : ''}`}>
+                  <DollarSign className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-1`} />
                   Payment
                 </Button>
               </div>
@@ -260,10 +268,10 @@ const TrainerManagement = () => {
       </div>
 
       {filteredTrainers.length === 0 && (
-        <Card className="p-8 text-center">
-          <User className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No trainers found</h3>
-          <p className="text-gray-600">Add your first trainer to get started</p>
+        <Card className={`${isMobile ? 'p-6' : 'p-8'} text-center`}>
+          <User className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-4`} />
+          <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-gray-900 mb-2`}>No trainers found</h3>
+          <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>Add your first trainer to get started</p>
         </Card>
       )}
     </div>
