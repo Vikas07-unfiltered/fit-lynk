@@ -1,8 +1,7 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, BarChart, Home, Settings } from 'lucide-react';
+import { Users, Calendar, BarChart, Home, Settings, CreditCard, TrendingUp, UserCheck } from 'lucide-react';
 import MemberManagement from '@/components/MemberManagement';
 import AttendanceTracker from '@/components/AttendanceTracker';
 import PaymentTracking from '@/components/PaymentTracking';
@@ -10,107 +9,140 @@ import Reports from '@/components/Reports';
 import TrainerManagement from '@/components/TrainerManagement';
 import GymHeader from '@/components/GymHeader';
 import DashboardOverview from '@/components/DashboardOverview';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('overview');
+  const isMobile = useIsMobile();
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Home },
+    { id: 'members', label: 'Members', icon: Users },
+    { id: 'attendance', label: 'Attendance', icon: Calendar },
+    { id: 'payments', label: 'Payments', icon: CreditCard },
+    { id: 'reports', label: 'Reports', icon: TrendingUp },
+    { id: 'trainers', label: 'Trainers', icon: UserCheck },
+  ];
+
+  const renderMobileTabsList = () => {
+    if (!isMobile) {
+      return (
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
+          {tabs.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
+              <tab.icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      );
+    }
+
+    // Mobile: Show 3 tabs at a time with horizontal scroll
+    return (
+      <div className="w-full overflow-x-auto">
+        <TabsList className="flex w-max min-w-full gap-1 p-1">
+          {tabs.map((tab) => (
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id} 
+              className="flex flex-col items-center gap-1 py-3 px-4 min-w-[80px] whitespace-nowrap"
+            >
+              <tab.icon className="w-4 h-4" />
+              <span className="text-xs">{tab.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-blue-50">
       <GymHeader />
       
-      <div className="container mx-auto px-4 py-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Gym Management Dashboard</h1>
-          <p className="text-gray-600">Manage your gym operations efficiently</p>
+      <div className={`${isMobile ? 'px-3 py-4' : 'container mx-auto px-4 py-6'}`}>
+        <div className={`mb-${isMobile ? '4' : '8'}`}>
+          <h1 className={`${isMobile ? 'text-xl' : 'text-3xl'} font-bold text-gray-900 mb-2`}>
+            {isMobile ? 'Dashboard' : 'Gym Management Dashboard'}
+          </h1>
+          <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>
+            {isMobile ? 'Manage your gym efficiently' : 'Manage your gym operations efficiently'}
+          </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-1">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="members" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Members</span>
-            </TabsTrigger>
-            <TabsTrigger value="attendance" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              <span className="hidden sm:inline">Attendance</span>
-            </TabsTrigger>
-            <TabsTrigger value="payments" className="flex items-center gap-2">
-              <BarChart className="w-4 h-4" />
-              <span className="hidden sm:inline">Payments</span>
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <BarChart className="w-4 h-4" />
-              <span className="hidden sm:inline">Reports</span>
-            </TabsTrigger>
-            <TabsTrigger value="trainers" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Trainers</span>
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          {renderMobileTabsList()}
 
-          <TabsContent value="overview">
+          <TabsContent value="overview" className="mt-4">
             <DashboardOverview />
           </TabsContent>
 
-          <TabsContent value="members">
+          <TabsContent value="members" className="mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Member Management</CardTitle>
-                <CardDescription>Add, edit, and manage your gym members</CardDescription>
+              <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
+                <CardTitle className={isMobile ? 'text-lg' : ''}>Member Management</CardTitle>
+                <CardDescription className={isMobile ? 'text-sm' : ''}>
+                  {isMobile ? 'Manage your gym members' : 'Add, edit, and manage your gym members'}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
                 <MemberManagement />
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="attendance">
+          <TabsContent value="attendance" className="mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Attendance Tracking</CardTitle>
-                <CardDescription>Track member attendance and check-ins</CardDescription>
+              <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
+                <CardTitle className={isMobile ? 'text-lg' : ''}>Attendance Tracking</CardTitle>
+                <CardDescription className={isMobile ? 'text-sm' : ''}>
+                  {isMobile ? 'Track member check-ins' : 'Track member attendance and check-ins'}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
                 <AttendanceTracker />
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="payments">
+          <TabsContent value="payments" className="mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Payment Management</CardTitle>
-                <CardDescription>Track payments and manage billing</CardDescription>
+              <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
+                <CardTitle className={isMobile ? 'text-lg' : ''}>Payment Management</CardTitle>
+                <CardDescription className={isMobile ? 'text-sm' : ''}>
+                  {isMobile ? 'Track payments and billing' : 'Track payments and manage billing'}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
                 <PaymentTracking />
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="reports">
+          <TabsContent value="reports" className="mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Reports & Analytics</CardTitle>
-                <CardDescription>View performance metrics and generate reports</CardDescription>
+              <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
+                <CardTitle className={isMobile ? 'text-lg' : ''}>Reports & Analytics</CardTitle>
+                <CardDescription className={isMobile ? 'text-sm' : ''}>
+                  {isMobile ? 'View performance metrics' : 'View performance metrics and generate reports'}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
                 <Reports />
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="trainers">
+          <TabsContent value="trainers" className="mt-4">
             <Card>
-              <CardHeader>
-                <CardTitle>Trainer Management</CardTitle>
-                <CardDescription>Manage gym trainers and their schedules</CardDescription>
+              <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
+                <CardTitle className={isMobile ? 'text-lg' : ''}>Trainer Management</CardTitle>
+                <CardDescription className={isMobile ? 'text-sm' : ''}>
+                  {isMobile ? 'Manage gym trainers' : 'Manage gym trainers and their schedules'}
+                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
                 <TrainerManagement />
               </CardContent>
             </Card>

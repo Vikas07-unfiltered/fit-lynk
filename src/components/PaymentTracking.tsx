@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, IndianRupee, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Payment {
   id: string;
@@ -30,6 +31,7 @@ const PaymentTracking = () => {
     method: '',
     plan: '',
   });
+  const isMobile = useIsMobile();
 
   const filteredPayments = payments.filter(payment =>
     payment.memberName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -85,34 +87,34 @@ const PaymentTracking = () => {
   const pendingAmount = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-4">
+      <div className={`grid grid-cols-1 ${isMobile ? 'gap-3' : 'md:grid-cols-3 gap-4'}`}>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
+            <CardTitle className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>Total Revenue</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">₹{totalRevenue}</div>
+          <CardContent className={isMobile ? 'px-4 pb-3' : ''}>
+            <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-green-600`}>₹{totalRevenue}</div>
             <p className="text-xs text-gray-500">This month</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Pending Payments</CardTitle>
+          <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
+            <CardTitle className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>Pending Payments</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">₹{pendingAmount}</div>
+          <CardContent className={isMobile ? 'px-4 pb-3' : ''}>
+            <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-yellow-600`}>₹{pendingAmount}</div>
             <p className="text-xs text-gray-500">Awaiting collection</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Payment Rate</CardTitle>
+          <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
+            <CardTitle className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>Payment Rate</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+          <CardContent className={isMobile ? 'px-4 pb-3' : ''}>
+            <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-blue-600`}>
               {payments.length > 0 ? Math.round((payments.filter(p => p.status === 'completed').length / payments.length) * 100) : 0}%
             </div>
             <p className="text-xs text-gray-500">On-time payments</p>
@@ -120,52 +122,54 @@ const PaymentTracking = () => {
         </Card>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className={`flex ${isMobile ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 items-start ${isMobile ? '' : 'sm:items-center'} justify-between`}>
+        <div className={`relative flex-1 ${isMobile ? 'w-full' : 'max-w-md'}`}>
+          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 ${isMobile ? 'w-5 h-5' : 'w-4 h-4'}`} />
           <Input
             placeholder="Search payments..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className={`${isMobile ? 'pl-12 h-12 text-base' : 'pl-10'}`}
           />
         </div>
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700">
-              <IndianRupee className="w-4 h-4 mr-2" />
+            <Button className={`bg-emerald-600 hover:bg-emerald-700 ${isMobile ? 'w-full h-12' : ''}`}>
+              <IndianRupee className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-2`} />
               Record Payment
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className={`${isMobile ? 'w-[95vw] max-w-none mx-auto' : 'sm:max-w-md'}`}>
             <DialogHeader>
-              <DialogTitle>Record New Payment</DialogTitle>
+              <DialogTitle className={isMobile ? 'text-lg' : ''}>Record New Payment</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="memberName">Member Name</Label>
+                <Label htmlFor="memberName" className={isMobile ? 'text-sm' : ''}>Member Name</Label>
                 <Input
                   id="memberName"
                   value={newPayment.memberName}
                   onChange={(e) => setNewPayment({ ...newPayment, memberName: e.target.value })}
                   placeholder="Enter member name"
+                  className={isMobile ? 'h-12 text-base mt-1' : ''}
                 />
               </div>
               <div>
-                <Label htmlFor="amount">Amount</Label>
+                <Label htmlFor="amount" className={isMobile ? 'text-sm' : ''}>Amount</Label>
                 <Input
                   id="amount"
                   type="number"
                   value={newPayment.amount}
                   onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
                   placeholder="0.00"
+                  className={isMobile ? 'h-12 text-base mt-1' : ''}
                 />
               </div>
               <div>
-                <Label htmlFor="method">Payment Method</Label>
+                <Label htmlFor="method" className={isMobile ? 'text-sm' : ''}>Payment Method</Label>
                 <Select onValueChange={(value) => setNewPayment({ ...newPayment, method: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className={isMobile ? 'h-12 text-base mt-1' : ''}>
                     <SelectValue placeholder="Select method" />
                   </SelectTrigger>
                   <SelectContent>
@@ -177,9 +181,9 @@ const PaymentTracking = () => {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="plan">Plan</Label>
+                <Label htmlFor="plan" className={isMobile ? 'text-sm' : ''}>Plan</Label>
                 <Select onValueChange={(value) => setNewPayment({ ...newPayment, plan: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className={isMobile ? 'h-12 text-base mt-1' : ''}>
                     <SelectValue placeholder="Select plan" />
                   </SelectTrigger>
                   <SelectContent>
@@ -189,7 +193,10 @@ const PaymentTracking = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleAddPayment} className="w-full bg-emerald-600 hover:bg-emerald-700">
+              <Button 
+                onClick={handleAddPayment} 
+                className={`w-full bg-emerald-600 hover:bg-emerald-700 ${isMobile ? 'h-12' : ''}`}
+              >
                 Record Payment
               </Button>
             </div>
@@ -197,26 +204,26 @@ const PaymentTracking = () => {
         </Dialog>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {filteredPayments.map((payment) => (
           <Card key={payment.id} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-400 rounded-full flex items-center justify-center">
-                      <IndianRupee className="w-5 h-5 text-white" />
+            <CardContent className={`${isMobile ? 'p-4' : 'p-4'}`}>
+              <div className={`flex items-center justify-between ${isMobile ? 'flex-col gap-4' : ''}`}>
+                <div className={`flex-1 ${isMobile ? 'w-full' : ''}`}>
+                  <div className={`flex items-center gap-3 mb-3 ${isMobile ? 'mb-2' : ''}`}>
+                    <div className={`${isMobile ? 'w-12 h-12' : 'w-10 h-10'} bg-gradient-to-r from-green-400 to-blue-400 rounded-full flex items-center justify-center`}>
+                      <IndianRupee className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} text-white`} />
                     </div>
                     <div>
-                      <h3 className="font-semibold">{payment.memberName}</h3>
-                      <p className="text-sm text-gray-600">{payment.plan} Plan</p>
+                      <h3 className={`font-semibold ${isMobile ? 'text-base' : ''}`}>{payment.memberName}</h3>
+                      <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-gray-600`}>{payment.plan} Plan</p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-2 md:grid-cols-4 gap-4'} ${isMobile ? 'text-sm' : 'text-sm'}`}>
                     <div>
                       <span className="font-medium">Amount:</span>
-                      <p className="text-green-600 font-bold">₹{payment.amount}</p>
+                      <p className={`text-green-600 font-bold ${isMobile ? 'text-base' : ''}`}>₹{payment.amount}</p>
                     </div>
                     <div>
                       <span className="font-medium">Date:</span>
@@ -237,12 +244,12 @@ const PaymentTracking = () => {
                 
                 {payment.status === 'pending' && (
                   <Button
-                    size="sm"
+                    size={isMobile ? "default" : "sm"}
                     variant="outline"
                     onClick={() => sendReminder(payment)}
-                    className="ml-4"
+                    className={`${isMobile ? 'w-full' : 'ml-4'}`}
                   >
-                    <Bell className="w-4 h-4 mr-1" />
+                    <Bell className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} mr-1`} />
                     Send Reminder
                   </Button>
                 )}
@@ -253,10 +260,10 @@ const PaymentTracking = () => {
       </div>
 
       {filteredPayments.length === 0 && (
-        <Card className="p-8 text-center">
-          <IndianRupee className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No payments found</h3>
-          <p className="text-gray-600">Record your first payment to get started</p>
+        <Card className={`${isMobile ? 'p-6' : 'p-8'} text-center`}>
+          <IndianRupee className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-4`} />
+          <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-gray-900 mb-2`}>No payments found</h3>
+          <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>Record your first payment to get started</p>
         </Card>
       )}
     </div>

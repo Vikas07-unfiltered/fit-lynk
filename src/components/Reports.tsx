@@ -3,9 +3,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Users, DollarSign, Calendar, Download } from 'lucide-react';
 import { useState } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Reports = () => {
   const [reportPeriod, setReportPeriod] = useState('weekly');
+  const isMobile = useIsMobile();
   
   // Empty states - real data would come from API/database
   const weeklyData = {
@@ -33,15 +35,15 @@ const Reports = () => {
     color: string; 
   }) => (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium">{title}</CardTitle>
-          <Icon className={`w-4 h-4 ${color}`} />
+          <CardTitle className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>{title}</CardTitle>
+          <Icon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} ${color}`} />
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold mb-1">{value}</div>
-        <div className="flex items-center text-xs">
+      <CardContent className={isMobile ? 'px-4 pb-3' : ''}>
+        <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold mb-1`}>{value}</div>
+        <div className={`flex items-center ${isMobile ? 'text-xs' : 'text-xs'}`}>
           {change > 0 ? (
             <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
           ) : change < 0 ? (
@@ -61,16 +63,16 @@ const Reports = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+    <div className="space-y-4">
+      <div className={`flex ${isMobile ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 items-start ${isMobile ? '' : 'sm:items-center'} justify-between`}>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Reports & Analytics</h2>
-          <p className="text-gray-600">Track your gym's performance</p>
+          <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>Reports & Analytics</h2>
+          <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>Track your gym's performance</p>
         </div>
         
-        <div className="flex gap-2">
+        <div className={`flex gap-2 ${isMobile ? 'w-full' : ''}`}>
           <Select value={reportPeriod} onValueChange={setReportPeriod}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className={`${isMobile ? 'flex-1 h-12' : 'w-32'}`}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -80,14 +82,14 @@ const Reports = () => {
             </SelectContent>
           </Select>
           
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Export
+          <Button variant="outline" className={isMobile ? 'h-12 px-4' : ''}>
+            <Download className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} ${isMobile ? 'mr-2' : 'mr-2'}`} />
+            {isMobile ? 'Export' : 'Export'}
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 ${isMobile ? 'gap-3' : 'md:grid-cols-2 lg:grid-cols-4 gap-4'}`}>
         <StatCard
           title="Revenue"
           value={`₹${weeklyData.revenue}`}
@@ -118,57 +120,57 @@ const Reports = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'lg:grid-cols-2 gap-6'}`}>
         <Card>
-          <CardHeader>
-            <CardTitle>Daily Breakdown</CardTitle>
+          <CardHeader className={isMobile ? 'px-4 pt-4 pb-3' : ''}>
+            <CardTitle className={isMobile ? 'text-base' : ''}>Daily Breakdown</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-600">No data available</p>
-              <p className="text-sm text-gray-500">Analytics will appear here once you have attendance data</p>
+          <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
+            <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
+              <Calendar className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
+              <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No data available</p>
+              <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Analytics will appear here once you have attendance data</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Top Members (This Month)</CardTitle>
+          <CardHeader className={isMobile ? 'px-4 pt-4 pb-3' : ''}>
+            <CardTitle className={isMobile ? 'text-base' : ''}>Top Members (This Month)</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-600">No member data available</p>
-              <p className="text-sm text-gray-500">Top performing members will appear here</p>
+          <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
+            <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
+              <Users className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
+              <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No member data available</p>
+              <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Top performing members will appear here</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'lg:grid-cols-2 gap-6'}`}>
         <Card>
-          <CardHeader>
-            <CardTitle>Revenue Trends</CardTitle>
+          <CardHeader className={isMobile ? 'px-4 pt-4 pb-3' : ''}>
+            <CardTitle className={isMobile ? 'text-base' : ''}>Revenue Trends</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <TrendingUp className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-600">No revenue data available</p>
-              <p className="text-sm text-gray-500">Revenue trends will appear here once you have payment data</p>
+          <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
+            <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
+              <TrendingUp className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
+              <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No revenue data available</p>
+              <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Revenue trends will appear here once you have payment data</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Attendance Patterns</CardTitle>
+          <CardHeader className={isMobile ? 'px-4 pt-4 pb-3' : ''}>
+            <CardTitle className={isMobile ? 'text-base' : ''}>Attendance Patterns</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-center py-8">
-              <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-              <p className="text-gray-600">No attendance data available</p>
-              <p className="text-sm text-gray-500">Attendance patterns will appear here once you start tracking visits</p>
+          <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
+            <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
+              <Calendar className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
+              <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No attendance data available</p>
+              <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Attendance patterns will appear here once you start tracking visits</p>
             </div>
           </CardContent>
         </Card>
