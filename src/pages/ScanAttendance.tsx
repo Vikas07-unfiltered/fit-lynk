@@ -26,6 +26,7 @@ const ScanAttendance: React.FC = () => {
   const [error, setError] = useState('');
   const [memberStatus, setMemberStatus] = useState<'checked_in' | 'checked_out' | null>(null);
   const [memberName, setMemberName] = useState('');
+  const [memberFound, setMemberFound] = useState(false);
   const isMobile = useIsMobile();
 
   // Check member status when memberId changes
@@ -34,36 +35,46 @@ const ScanAttendance: React.FC = () => {
       if (!gymId || !memberId.trim()) {
         setMemberStatus(null);
         setMemberName('');
+        setMemberFound(false);
+        setError('');
         return;
       }
 
       try {
-        // Get member details
+        console.log('Checking member:', memberId.trim(), 'for gym:', gymId);
+        
+        // Get member details - check both user_id and id fields
         const { data: memberData, error: memberError } = await supabase
           .from('members')
-          .select('name')
+          .select('name, user_id, id')
           .eq('gym_id', gymId)
-          .eq('user_id', memberId.trim())
           .eq('status', 'active')
+          .or(`user_id.eq.${memberId.trim()},id.eq.${memberId.trim()}`)
           .single();
+
+        console.log('Member lookup result:', memberData, memberError);
 
         if (memberError || !memberData) {
           setMemberStatus(null);
           setMemberName('');
+          setMemberFound(false);
           return;
         }
 
         setMemberName(memberData.name);
+        setMemberFound(true);
 
-        // Check current attendance status
-        const { data: attendanceData } = await supabase
+        // Check current attendance status using the member's user_id
+        const { data: attendanceData, error: attendanceError } = await supabase
           .from('attendance')
           .select('status')
           .eq('gym_id', gymId)
-          .eq('member_id', memberId.trim())
+          .eq('member_id', memberData.user_id)
           .eq('status', 'checked_in')
           .order('timestamp', { ascending: false })
           .limit(1);
+
+        console.log('Attendance check:', attendanceData, attendanceError);
 
         if (attendanceData && attendanceData.length > 0) {
           setMemberStatus('checked_in');
@@ -74,6 +85,7 @@ const ScanAttendance: React.FC = () => {
         console.error('Error checking member status:', err);
         setMemberStatus(null);
         setMemberName('');
+        setMemberFound(false);
       }
     };
 
@@ -86,20 +98,20 @@ const ScanAttendance: React.FC = () => {
     setSuccess('');
     setError('');
 
-    if (!gymId || !memberId) {
+    if (!gymId || !memberId.trim()) {
       setError('Please provide both Gym ID and Member ID.');
       setLoading(false);
       return;
     }
 
     try {
-      // Check if member exists and is active
+      // Get member details - check both user_id and id fields
       const { data: memberData, error: memberError } = await supabase
         .from('members')
-        .select('id, name')
+        .select('id, name, user_id')
         .eq('gym_id', gymId)
-        .eq('user_id', memberId)
         .eq('status', 'active')
+        .or(`user_id.eq.${memberId.trim()},id.eq.${memberId.trim()}`)
         .single();
 
       if (memberError || !memberData) {
@@ -108,12 +120,12 @@ const ScanAttendance: React.FC = () => {
         return;
       }
 
-      // Check if already checked in
+      // Check if already checked in using the member's user_id
       const { data: existingRecord } = await supabase
         .from('attendance')
         .select('*')
         .eq('gym_id', gymId)
-        .eq('member_id', memberId)
+        .eq('member_id', memberData.user_id)
         .eq('status', 'checked_in')
         .order('timestamp', { ascending: false })
         .limit(1);
@@ -124,11 +136,11 @@ const ScanAttendance: React.FC = () => {
         return;
       }
 
-      // Insert check-in record
+      // Insert check-in record using the member's user_id
       const { error: insertError } = await supabase.from('attendance').insert([
         {
           gym_id: gymId,
-          member_id: memberId,
+          member_id: memberData.user_id,
           method: 'qr_scan',
           status: 'checked_in',
           timestamp: new Date().toISOString(),
@@ -154,19 +166,34 @@ const ScanAttendance: React.FC = () => {
     setSuccess('');
     setError('');
 
-    if (!gymId || !memberId) {
+    if (!gymId || !memberId.trim()) {
       setError('Please provide both Gym ID and Member ID.');
       setLoading(false);
       return;
     }
 
     try {
-      // Find the active check-in record
+      // Get member details first
+      const { data: memberData, error: memberError } = await supabase
+        .from('members')
+        .select('id, name, user_id')
+        .eq('gym_id', gymId)
+        .eq('status', 'active')
+        .or(`user_id.eq.${memberId.trim()},id.eq.${memberId.trim()}`)
+        .single();
+
+      if (memberError || !memberData) {
+        setError('Member ID not found or inactive. Please enter a valid Member ID.');
+        setLoading(false);
+        return;
+      }
+
+      // Find the active check-in record using member's user_id
       const { data: activeRecord, error: findError } = await supabase
         .from('attendance')
         .select('*')
         .eq('gym_id', gymId)
-        .eq('member_id', memberId)
+        .eq('member_id', memberData.user_id)
         .eq('status', 'checked_in')
         .order('timestamp', { ascending: false })
         .limit(1);
@@ -189,7 +216,7 @@ const ScanAttendance: React.FC = () => {
       if (updateError) {
         setError('Failed to record check-out: ' + updateError.message);
       } else {
-        setSuccess(`Goodbye ${memberName}! You have been checked out successfully.`);
+        setSuccess(`Goodbye ${memberData.name}! You have been checked out successfully.`);
         setMemberStatus('checked_out');
         setMemberId('');
       }
@@ -201,13 +228,24 @@ const ScanAttendance: React.FC = () => {
   };
 
   const getActionButton = () => {
-    if (!memberId.trim() || !memberName) {
+    if (!memberId.trim()) {
       return (
         <Button 
           disabled
           className={`w-full ${isMobile ? 'h-12 text-base' : ''}`}
         >
           Enter Member ID
+        </Button>
+      );
+    }
+
+    if (!memberFound) {
+      return (
+        <Button 
+          disabled
+          className={`w-full bg-gray-400 ${isMobile ? 'h-12 text-base' : ''}`}
+        >
+          Member Not Found
         </Button>
       );
     }
@@ -257,7 +295,7 @@ const ScanAttendance: React.FC = () => {
                 placeholder="Enter your Member ID"
                 className={isMobile ? 'h-12 text-base' : ''}
               />
-              {memberName && (
+              {memberName && memberFound && (
                 <div className="mt-2 flex items-center gap-2">
                   <Badge variant="outline" className="text-sm">
                     {memberName}
