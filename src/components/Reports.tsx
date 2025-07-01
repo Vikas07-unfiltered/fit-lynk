@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { BarChart, Bar, XAxis, YAxis, LineChart, Line, PieChart, Cell, Pie, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, LineChart, Line, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, Users, DollarSign, Calendar, Download, Clock, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -14,7 +14,6 @@ const Reports = () => {
   const isMobile = useIsMobile();
   const { analytics, loading } = useAdvancedAnalytics();
   
-  // Empty states - real data would come from API/database
   const weeklyData = {
     revenue: 0,
     revenueChange: 0,
@@ -60,16 +59,16 @@ const Reports = () => {
     icon: any; 
     color: string; 
   }) => (
-    <Card>
-      <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
+    <Card className="h-full">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>{title}</CardTitle>
-          <Icon className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} ${color}`} />
+          <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
+          <Icon className={`w-4 h-4 ${color}`} />
         </div>
       </CardHeader>
-      <CardContent className={isMobile ? 'px-4 pb-3' : ''}>
-        <div className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold mb-1`}>{value}</div>
-        <div className={`flex items-center ${isMobile ? 'text-xs' : 'text-xs'}`}>
+      <CardContent className="pt-0">
+        <div className="text-2xl font-bold mb-1">{value}</div>
+        <div className="flex items-center text-xs">
           {change > 0 ? (
             <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
           ) : change < 0 ? (
@@ -92,7 +91,7 @@ const Reports = () => {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => (
+          {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader className="pb-2">
                 <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -109,16 +108,17 @@ const Reports = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className={`flex ${isMobile ? 'flex-col' : 'flex-col sm:flex-row'} gap-4 items-start ${isMobile ? '' : 'sm:items-center'} justify-between`}>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
-          <h2 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-gray-900`}>Reports & Analytics</h2>
-          <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>Comprehensive insights and performance tracking</p>
+          <h2 className="text-2xl font-bold text-gray-900">Reports & Analytics</h2>
+          <p className="text-gray-600">Comprehensive insights and performance tracking</p>
         </div>
         
-        <div className={`flex gap-2 ${isMobile ? 'w-full' : ''}`}>
+        <div className="flex gap-2 w-full sm:w-auto">
           <Select value={reportPeriod} onValueChange={setReportPeriod}>
-            <SelectTrigger className={`${isMobile ? 'flex-1 h-12' : 'w-32'}`}>
+            <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -128,15 +128,15 @@ const Reports = () => {
             </SelectContent>
           </Select>
           
-          <Button variant="outline" className={isMobile ? 'h-12 px-4' : ''}>
-            <Download className={`${isMobile ? 'w-5 h-5' : 'w-4 h-4'} ${isMobile ? 'mr-2' : 'mr-2'}`} />
-            {isMobile ? 'Export' : 'Export'}
+          <Button variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Export
           </Button>
         </div>
       </div>
 
-      {/* Enhanced Summary Cards */}
-      <div className={`grid grid-cols-1 ${isMobile ? 'sm:grid-cols-2 gap-3' : 'md:grid-cols-2 lg:grid-cols-4 gap-4'}`}>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Peak Hour"
           value={topPeakHours[0] ? `${topPeakHours[0].hour}:00` : 'N/A'}
@@ -168,143 +168,156 @@ const Reports = () => {
       </div>
 
       {/* Charts Grid */}
-      <div className={`grid grid-cols-1 ${isMobile ? 'gap-6' : 'lg:grid-cols-2 gap-6'}`}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Peak Hours Chart */}
-        <Card>
+        <Card className="h-full">
           <CardHeader>
-            <CardTitle className={isMobile ? 'text-base' : 'text-lg'}>Peak Hours Analysis</CardTitle>
+            <CardTitle>Peak Hours Analysis</CardTitle>
           </CardHeader>
           <CardContent>
-            {topPeakHours.length > 0 ? (
-              <ChartContainer config={chartConfig} className={`${isMobile ? 'h-[200px]' : 'h-[300px]'}`}>
-                <BarChart data={topPeakHours}>
-                  <XAxis 
-                    dataKey="hour" 
-                    tickFormatter={(value) => `${value}:00`}
-                    fontSize={isMobile ? 10 : 12}
-                  />
-                  <YAxis fontSize={isMobile ? 10 : 12} />
-                  <ChartTooltip 
-                    content={<ChartTooltipContent />}
-                    formatter={(value, name) => [`${value} visits`, `${name}:00`]}
-                  />
-                  <Bar dataKey="count" fill="var(--color-count)" radius={2} />
-                </BarChart>
-              </ChartContainer>
-            ) : (
-              <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-                <Clock className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
-                <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No peak hours data available</p>
-                <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Data will appear here once you have attendance records</p>
-              </div>
-            )}
+            <div className="h-[300px] w-full">
+              {topPeakHours.length > 0 ? (
+                <ChartContainer config={chartConfig} className="h-full w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topPeakHours} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <XAxis 
+                        dataKey="hour" 
+                        tickFormatter={(value) => `${value}:00`}
+                        fontSize={12}
+                      />
+                      <YAxis fontSize={12} />
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value, name) => [`${value} visits`, `${name}:00`]}
+                      />
+                      <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <Clock className="w-12 h-12 text-gray-400 mb-2" />
+                  <p className="text-gray-600">No peak hours data available</p>
+                  <p className="text-gray-500 text-sm">Data will appear here once you have attendance records</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Attendance Trends */}
-        <Card>
+        <Card className="h-full">
           <CardHeader>
-            <CardTitle className={isMobile ? 'text-base' : 'text-lg'}>30-Day Attendance Trend</CardTitle>
+            <CardTitle>30-Day Attendance Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            {recentTrends.length > 0 ? (
-              <ChartContainer config={chartConfig} className={`${isMobile ? 'h-[200px]' : 'h-[300px]'}`}>
-                <LineChart data={recentTrends}>
-                  <XAxis 
-                    dataKey="date" 
-                    tickFormatter={(value) => new Date(value).getDate().toString()}
-                    fontSize={isMobile ? 10 : 12}
-                  />
-                  <YAxis fontSize={isMobile ? 10 : 12} />
-                  <ChartTooltip 
-                    content={<ChartTooltipContent />}
-                    formatter={(value) => [`${value} visits`, 'Attendance']}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke="var(--color-count)" 
-                    strokeWidth={2}
-                    dot={{ fill: 'var(--color-count)', strokeWidth: 2, r: 3 }}
-                  />
-                </LineChart>
-              </ChartContainer>
-            ) : (
-              <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-                <Calendar className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
-                <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No attendance trends available</p>
-                <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Trends will appear here once you start tracking attendance</p>
-              </div>
-            )}
+            <div className="h-[300px] w-full">
+              {recentTrends.length > 0 ? (
+                <ChartContainer config={chartConfig} className="h-full w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={recentTrends} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <XAxis 
+                        dataKey="date" 
+                        tickFormatter={(value) => new Date(value).getDate().toString()}
+                        fontSize={12}
+                      />
+                      <YAxis fontSize={12} />
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value) => [`${value} visits`, 'Attendance']}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="count" 
+                        stroke="var(--color-count)" 
+                        strokeWidth={2}
+                        dot={{ fill: 'var(--color-count)', strokeWidth: 2, r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <Calendar className="w-12 h-12 text-gray-400 mb-2" />
+                  <p className="text-gray-600">No attendance trends available</p>
+                  <p className="text-gray-500 text-sm">Trends will appear here once you start tracking attendance</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Revenue Forecast */}
-        <Card>
+        <Card className="h-full">
           <CardHeader>
-            <CardTitle className={isMobile ? 'text-base' : 'text-lg'}>Revenue Forecast</CardTitle>
+            <CardTitle>Revenue Forecast</CardTitle>
           </CardHeader>
           <CardContent>
-            {analytics.revenueForecast.length > 0 ? (
-              <ChartContainer config={chartConfig} className={`${isMobile ? 'h-[200px]' : 'h-[300px]'}`}>
-                <BarChart data={analytics.revenueForecast}>
-                  <XAxis dataKey="month" fontSize={isMobile ? 9 : 12} />
-                  <YAxis fontSize={isMobile ? 10 : 12} />
-                  <ChartTooltip 
-                    content={<ChartTooltipContent />}
-                    formatter={(value, name) => [`₹${Math.round(Number(value))}`, name === 'actualRevenue' ? 'Actual' : 'Forecast']}
-                  />
-                  <Bar dataKey="actualRevenue" fill="var(--color-revenue)" radius={2} />
-                  <Bar dataKey="forecastRevenue" fill="var(--color-forecast)" radius={2} />
-                </BarChart>
-              </ChartContainer>
-            ) : (
-              <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-                <TrendingUp className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
-                <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No revenue data available</p>
-                <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Revenue trends will appear here once you have payment data</p>
-              </div>
-            )}
+            <div className="h-[300px] w-full">
+              {analytics.revenueForecast.length > 0 ? (
+                <ChartContainer config={chartConfig} className="h-full w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analytics.revenueForecast} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <XAxis dataKey="month" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value, name) => [`₹${Math.round(Number(value))}`, name === 'actualRevenue' ? 'Actual' : 'Forecast']}
+                      />
+                      <Bar dataKey="actualRevenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="forecastRevenue" fill="var(--color-forecast)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </ChartContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <TrendingUp className="w-12 h-12 text-gray-400 mb-2" />
+                  <p className="text-gray-600">No revenue data available</p>
+                  <p className="text-gray-500 text-sm">Revenue trends will appear here once you have payment data</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
         {/* Member Engagement */}
-        <Card>
+        <Card className="h-full">
           <CardHeader>
-            <CardTitle className={isMobile ? 'text-base' : 'text-lg'}>Top Member Engagement</CardTitle>
+            <CardTitle>Top Member Engagement</CardTitle>
           </CardHeader>
           <CardContent>
-            {topEngagedMembers.length > 0 ? (
-              <div className="space-y-4">
-                {topEngagedMembers.slice(0, 5).map((member, index) => (
-                  <div key={member.memberId} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full`} style={{ backgroundColor: COLORS[index] }}></div>
-                      <span className={`${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>
-                        {member.memberName}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-500`}>
-                        {member.attendanceCount} visits
-                      </span>
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-600 h-2 rounded-full" 
-                          style={{ width: `${member.score}%` }}
-                        ></div>
+            <div className="h-[300px] w-full">
+              {topEngagedMembers.length > 0 ? (
+                <div className="space-y-4 pt-4">
+                  {topEngagedMembers.slice(0, 5).map((member, index) => (
+                    <div key={member.memberId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
+                        <div>
+                          <span className="text-sm font-medium">{member.memberName}</span>
+                          <p className="text-xs text-gray-500">{member.attendanceCount} visits</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                            style={{ width: `${member.score}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-xs text-gray-600">{Math.round(member.score)}%</span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-                <Users className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
-                <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No member engagement data</p>
-                <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Top performing members will appear here</p>
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <Users className="w-12 h-12 text-gray-400 mb-2" />
+                  <p className="text-gray-600">No member engagement data</p>
+                  <p className="text-gray-500 text-sm">Top performing members will appear here</p>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -312,7 +325,7 @@ const Reports = () => {
       {/* Retention Analysis Table */}
       <Card>
         <CardHeader>
-          <CardTitle className={isMobile ? 'text-base' : 'text-lg'}>Member Retention Analysis</CardTitle>
+          <CardTitle>Member Retention Analysis</CardTitle>
         </CardHeader>
         <CardContent>
           {analytics.retentionAnalysis.length > 0 ? (
@@ -320,22 +333,28 @@ const Reports = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b">
-                    <th className={`text-left ${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 pb-2`}>Period</th>
-                    <th className={`text-left ${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 pb-2`}>New Members</th>
-                    <th className={`text-left ${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 pb-2`}>Active</th>
-                    <th className={`text-left ${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 pb-2`}>Churned</th>
-                    <th className={`text-left ${isMobile ? 'text-xs' : 'text-sm'} font-medium text-gray-500 pb-2`}>Retention Rate</th>
+                    <th className="text-left text-sm font-medium text-gray-500 pb-3">Period</th>
+                    <th className="text-left text-sm font-medium text-gray-500 pb-3">New Members</th>
+                    <th className="text-left text-sm font-medium text-gray-500 pb-3">Active</th>
+                    <th className="text-left text-sm font-medium text-gray-500 pb-3">Churned</th>
+                    <th className="text-left text-sm font-medium text-gray-500 pb-3">Retention Rate</th>
                   </tr>
                 </thead>
                 <tbody>
                   {analytics.retentionAnalysis.map((period, index) => (
                     <tr key={index} className="border-b last:border-b-0">
-                      <td className={`py-2 ${isMobile ? 'text-sm' : 'text-sm'} font-medium`}>{period.period}</td>
-                      <td className={`py-2 ${isMobile ? 'text-sm' : 'text-sm'}`}>{period.newMembers}</td>
-                      <td className={`py-2 ${isMobile ? 'text-sm' : 'text-sm'}`}>{period.activeMembers}</td>
-                      <td className={`py-2 ${isMobile ? 'text-sm' : 'text-sm'}`}>{period.churnedMembers}</td>
-                      <td className={`py-2 ${isMobile ? 'text-sm' : 'text-sm'}`}>
-                        <span className={`font-medium ${period.retentionRate > 80 ? 'text-green-600' : period.retentionRate > 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      <td className="py-3 text-sm font-medium">{period.period}</td>
+                      <td className="py-3 text-sm">{period.newMembers}</td>
+                      <td className="py-3 text-sm">{period.activeMembers}</td>
+                      <td className="py-3 text-sm">{period.churnedMembers}</td>
+                      <td className="py-3 text-sm">
+                        <span className={`font-medium px-2 py-1 rounded-full text-xs ${
+                          period.retentionRate > 80 
+                            ? 'bg-green-100 text-green-700' 
+                            : period.retentionRate > 60 
+                            ? 'bg-yellow-100 text-yellow-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
                           {Math.round(period.retentionRate)}%
                         </span>
                       </td>
@@ -345,10 +364,10 @@ const Reports = () => {
               </table>
             </div>
           ) : (
-            <div className={`text-center ${isMobile ? 'py-6' : 'py-8'}`}>
-              <Users className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-2`} />
-              <p className={`text-gray-600 ${isMobile ? 'text-base' : ''}`}>No retention data available</p>
-              <p className={`text-gray-500 ${isMobile ? 'text-sm' : 'text-sm'}`}>Retention analysis will appear here once you have member data</p>
+            <div className="text-center py-8">
+              <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+              <p className="text-gray-600">No retention data available</p>
+              <p className="text-gray-500 text-sm">Retention analysis will appear here once you have member data</p>
             </div>
           )}
         </CardContent>
