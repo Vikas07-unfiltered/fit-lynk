@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useMembers } from '@/hooks/useMembers';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,10 +15,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface AttendanceRecord {
   id: string;
   memberName: string;
+  member_id: string;
   checkInTime: string;
   checkOutTime?: string;
   date: string;
   duration?: number;
+  status: 'checked_in' | 'checked_out';
 }
 
 const AttendanceTracker = () => {
@@ -38,7 +41,7 @@ const AttendanceTracker = () => {
     record.memberName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleManualCheckIn = () => {
+  const handleManualCheckIn = async () => {
     if (!manualMemberName.trim()) {
       toast({
         title: "Error",
@@ -47,10 +50,10 @@ const AttendanceTracker = () => {
       });
       return;
     }
-    // Debug: log input and members
+
     console.log('Manual check-in input:', manualMemberName);
     console.log('Members:', members);
-    // Accept either member name, id, or user_id for active members (case-insensitive, ignore all whitespace)
+    
     const normalize = (s: string) => s.replace(/\s+/g, '').toLowerCase();
     const input = normalize(manualMemberName);
     const foundMember = members.find(m =>
@@ -60,59 +63,131 @@ const AttendanceTracker = () => {
         normalize(m.user_id) === input
       )
     );
+
     if (!foundMember) {
       toast({
         title: "Error",
         description: "Only active members can check in. Check the name, Member ID, or member status.",
         variant: "destructive",
       });
-      setShowMembersModal(true); // Show modal for debugging
+      setShowMembersModal(true);
       return;
     }
-    const now = new Date();
-    const record: AttendanceRecord = {
-      id: Date.now().toString(),
-      memberName: foundMember.name,
-      checkInTime: now.toTimeString().slice(0, 5),
-      date: now.toISOString().split('T')[0],
-    };
-    setAttendanceRecords([record, ...attendanceRecords]);
-    setManualMemberName('');
-    toast({
-      title: "Success",
-      description: `${foundMember.name} checked in successfully`,
-    });
+
+    try {
+      // Check if member is already checked in
+      const { data: existingRecord } = await supabase
+        .from('attendance')
+        .select('*')
+        .eq('gym_id', gym?.id)
+        .eq('member_id', foundMember.user_id)
+        .eq('status', 'checked_in')
+        .order('timestamp', { ascending: false })
+        .limit(1);
+
+      if (existingRecord && existingRecord.length > 0) {
+        toast({
+          title: "Already Checked In",
+          description: `${foundMember.name} is already checked in. Please check out first.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Insert check-in record
+      const { data, error } = await supabase
+        .from('attendance')
+        .insert({
+          gym_id: gym?.id,
+          member_id: foundMember.user_id,
+          method: 'manual',
+          status: 'checked_in',
+          timestamp: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      const newRecord: AttendanceRecord = {
+        id: data.id,
+        memberName: foundMember.name,
+        member_id: foundMember.user_id,
+        checkInTime: new Date(data.timestamp).toTimeString().slice(0, 5),
+        date: new Date(data.timestamp).toISOString().split('T')[0],
+        status: 'checked_in',
+      };
+
+      setAttendanceRecords([newRecord, ...attendanceRecords]);
+      setManualMemberName('');
+      
+      toast({
+        title: "Success",
+        description: `${foundMember.name} checked in successfully`,
+      });
+
+    } catch (error: any) {
+      console.error('Error during check-in:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to check in member",
+        variant: "destructive",
+      });
+    }
   };
 
+  const handleCheckOut = async (recordId: string, memberId: string) => {
+    try {
+      // Update the attendance record with check-out time
+      const { data, error } = await supabase
+        .from('attendance')
+        .update({
+          check_out_time: new Date().toISOString(),
+          status: 'checked_out'
+        })
+        .eq('id', recordId)
+        .select()
+        .single();
 
-  const handleCheckOut = (recordId: string) => {
-    const now = new Date();
-    const checkOutTime = now.toTimeString().slice(0, 5);
-    
-    setAttendanceRecords(records =>
-      records.map(record => {
-        if (record.id === recordId && !record.checkOutTime) {
-          const checkInHour = parseInt(record.checkInTime.split(':')[0]);
-          const checkInMinute = parseInt(record.checkInTime.split(':')[1]);
-          const checkOutHour = parseInt(checkOutTime.split(':')[0]);
-          const checkOutMinute = parseInt(checkOutTime.split(':')[1]);
-          
-          const duration = (checkOutHour * 60 + checkOutMinute) - (checkInHour * 60 + checkInMinute);
-          
-          return {
-            ...record,
-            checkOutTime,
-            duration: Math.max(0, duration),
-          };
-        }
-        return record;
-      })
-    );
+      if (error) throw error;
 
-    toast({
-      title: "Success",
-      description: "Member checked out successfully",
-    });
+      // Update local state
+      setAttendanceRecords(records =>
+        records.map(record => {
+          if (record.id === recordId) {
+            const checkOutTime = new Date().toTimeString().slice(0, 5);
+            const checkInHour = parseInt(record.checkInTime.split(':')[0]);
+            const checkInMinute = parseInt(record.checkInTime.split(':')[1]);
+            const checkOutHour = parseInt(checkOutTime.split(':')[0]);
+            const checkOutMinute = parseInt(checkOutTime.split(':')[1]);
+            
+            const duration = (checkOutHour * 60 + checkOutMinute) - (checkInHour * 60 + checkInMinute);
+            
+            return {
+              ...record,
+              checkOutTime,
+              duration: Math.max(0, duration),
+              status: 'checked_out' as const,
+            };
+          }
+          return record;
+        })
+      );
+
+      toast({
+        title: "Success",
+        description: "Member checked out successfully",
+      });
+
+    } catch (error: any) {
+      console.error('Error during check-out:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to check out member",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatDuration = (minutes: number) => {
@@ -123,7 +198,7 @@ const AttendanceTracker = () => {
 
   const todayStats = {
     totalCheckIns: todayRecords.length,
-    currentlyInside: todayRecords.filter(r => !r.checkOutTime).length,
+    currentlyInside: todayRecords.filter(r => r.status === 'checked_in').length,
     averageTime: todayRecords.filter(r => r.duration).reduce((sum, r) => sum + (r.duration || 0), 0) / 
                  todayRecords.filter(r => r.duration).length || 0,
   };
@@ -131,23 +206,37 @@ const AttendanceTracker = () => {
   // Fetch attendance records from Supabase for the current gym
   const fetchAttendance = async () => {
     if (!gym?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('attendance')
         .select('*')
         .eq('gym_id', gym.id)
         .order('timestamp', { ascending: false });
+      
       if (error) throw error;
+
       // Map Supabase attendance rows to AttendanceRecord for UI
-      const mapped = (data || []).map((row: any) => ({
-        id: row.id,
-        memberName: row.member_id, // You may want to join with members for actual names
-        checkInTime: row.timestamp ? new Date(row.timestamp).toTimeString().slice(0, 5) : '',
-        checkOutTime: undefined, // Not implemented in your schema yet
-        date: row.timestamp ? new Date(row.timestamp).toISOString().split('T')[0] : '',
-        duration: undefined,
+      const mapped = await Promise.all((data || []).map(async (row: any) => {
+        // Find member name from members list
+        const member = members.find(m => m.user_id === row.member_id);
+        const memberName = member ? member.name : row.member_id;
+
+        return {
+          id: row.id,
+          memberName,
+          member_id: row.member_id,
+          checkInTime: row.timestamp ? new Date(row.timestamp).toTimeString().slice(0, 5) : '',
+          checkOutTime: row.check_out_time ? new Date(row.check_out_time).toTimeString().slice(0, 5) : undefined,
+          date: row.timestamp ? new Date(row.timestamp).toISOString().split('T')[0] : '',
+          status: row.status || 'checked_in',
+          duration: row.check_out_time && row.timestamp ? 
+            Math.max(0, (new Date(row.check_out_time).getTime() - new Date(row.timestamp).getTime()) / (1000 * 60)) : undefined,
+        };
       }));
+
       setAttendanceRecords(mapped);
+      
       toast({
         title: "Refreshed!",
         description: "Attendance records loaded.",
@@ -161,11 +250,13 @@ const AttendanceTracker = () => {
     }
   };
 
-  // Fetch attendance on mount
+  // Fetch attendance on mount and when members change
   useEffect(() => {
-    fetchAttendance();
+    if (members.length > 0) {
+      fetchAttendance();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gym?.id]);
+  }, [gym?.id, members]);
 
   return (
     <div className="space-y-4">
@@ -174,6 +265,8 @@ const AttendanceTracker = () => {
           Refresh
         </Button>
       </div>
+      
+      {/* Stats Cards */}
       <div className={`grid grid-cols-1 ${isMobile ? 'gap-3' : 'md:grid-cols-3 gap-4'}`}>
         <Card>
           <CardHeader className={`${isMobile ? 'pb-2 px-4 pt-3' : 'pb-2'}`}>
@@ -208,7 +301,9 @@ const AttendanceTracker = () => {
         </Card>
       </div>
 
+      {/* Main Content */}
       <div className={`grid grid-cols-1 ${isMobile ? 'gap-4' : 'lg:grid-cols-2 gap-6'}`}>
+        {/* Quick Check-in Card */}
         <Card>
           <CardHeader className={isMobile ? 'px-4 pt-4 pb-3' : ''}>
             <CardTitle className={isMobile ? 'text-base' : ''}>Quick Check-in</CardTitle>
@@ -218,9 +313,10 @@ const AttendanceTracker = () => {
             {gym?.id && (
               <div className="flex flex-col items-center mb-2">
                 <QRCodeCanvas value={`${window.location.origin}/scan-attendance?gym_id=${gym.id}`} size={140} />
-                <div className="text-xs text-gray-500 mt-1">Scan to check in</div>
+                <div className="text-xs text-gray-500 mt-1">Scan to check in/out</div>
               </div>
             )}
+            
             <div className="space-y-3">
               <Button
                 onClick={() => setQrScanMode(!qrScanMode)}
@@ -274,6 +370,7 @@ const AttendanceTracker = () => {
           </CardContent>
         </Card>
 
+        {/* Today's Activity Card */}
         <Card>
           <CardHeader className={isMobile ? 'px-4 pt-4 pb-3' : ''}>
             <CardTitle className={isMobile ? 'text-base' : ''}>Today's Activity</CardTitle>
@@ -315,7 +412,7 @@ const AttendanceTracker = () => {
                   </div>
                   
                   <div className={`flex items-center gap-2 ${isMobile ? 'w-full justify-between' : ''}`}>
-                    {record.checkOutTime ? (
+                    {record.status === 'checked_out' ? (
                       <Badge className="bg-gray-100 text-gray-800">
                         Completed
                       </Badge>
@@ -327,7 +424,7 @@ const AttendanceTracker = () => {
                         <Button
                           size={isMobile ? "default" : "sm"}
                           variant="outline"
-                          onClick={() => handleCheckOut(record.id)}
+                          onClick={() => handleCheckOut(record.id, record.member_id)}
                           className={isMobile ? 'flex-1' : ''}
                         >
                           Check Out
@@ -373,6 +470,7 @@ const AttendanceTracker = () => {
           </CardContent>
         </Card>
       </div>
+      
       {/* Members Modal for debugging */}
       {showMembersModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
