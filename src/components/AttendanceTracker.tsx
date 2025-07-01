@@ -42,7 +42,7 @@ const AttendanceTracker = () => {
     if (!manualMemberName.trim()) {
       toast({
         title: "Error",
-        description: "Please enter member name",
+        description: "Please enter member ID",
         variant: "destructive",
       });
       return;
@@ -249,7 +249,7 @@ const AttendanceTracker = () => {
 
               <div className="space-y-3">
                 <Input
-                  placeholder="Enter member name"
+                  placeholder="Enter member ID"
                   value={manualMemberName}
                   onChange={(e) => setManualMemberName(e.target.value)}
                   className={isMobile ? 'h-12 text-base' : ''}
