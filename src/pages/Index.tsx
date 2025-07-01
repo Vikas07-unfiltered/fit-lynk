@@ -9,6 +9,7 @@ import Reports from '@/components/Reports';
 import TrainerManagement from '@/components/TrainerManagement';
 import GymHeader from '@/components/GymHeader';
 import DashboardOverview from '@/components/DashboardOverview';
+import AdvancedAnalytics from '@/components/AdvancedAnalytics';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -17,6 +18,7 @@ const Index = () => {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Home },
+    { id: 'analytics', label: 'Analytics', icon: BarChart },
     { id: 'members', label: 'Members', icon: Users },
     { id: 'attendance', label: 'Attendance', icon: Calendar },
     { id: 'payments', label: 'Payments', icon: CreditCard },
@@ -76,6 +78,20 @@ const Index = () => {
 
           <TabsContent value="overview" className="mt-4">
             <DashboardOverview />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="mt-4">
+            <Card>
+              <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
+                <CardTitle className={isMobile ? 'text-lg' : ''}>Advanced Analytics</CardTitle>
+                <CardDescription className={isMobile ? 'text-sm' : ''}>
+                  {isMobile ? 'Detailed insights and trends' : 'Comprehensive analytics, insights, and performance trends'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
+                <AdvancedAnalytics />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="members" className="mt-4">
