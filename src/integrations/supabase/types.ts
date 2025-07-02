@@ -210,6 +210,54 @@ export type Database = {
           },
         ]
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string
+          gym_id: string
+          id: string
+          member_id: string
+          member_name: string
+          member_user_id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          plan_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          gym_id: string
+          id?: string
+          member_id: string
+          member_name: string
+          member_user_id: string
+          notes?: string | null
+          payment_date: string
+          payment_method: string
+          plan_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          gym_id?: string
+          id?: string
+          member_id?: string
+          member_name?: string
+          member_user_id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          plan_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

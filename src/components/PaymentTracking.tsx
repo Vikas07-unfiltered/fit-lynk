@@ -6,39 +6,35 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { Search, Plus, IndianRupee, Bell } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-
-interface Payment {
-  id: string;
-  memberName: string;
-  amount: number;
-  date: string;
-  method: string;
-  status: 'completed' | 'pending' | 'overdue';
-  plan: string;
-  dueDate?: string;
-}
+import { usePayments } from '@/hooks/usePayments';
+import { NewPayment } from '@/types/payment';
+import MemberLookup from './payment/MemberLookup';
 
 const PaymentTracking = () => {
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const { payments, loading, addPayment } = usePayments();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<{ id: string; user_id: string; name: string } | null>(null);
   const [newPayment, setNewPayment] = useState({
-    memberName: '',
     amount: '',
+    paymentDate: new Date().toISOString().split('T')[0],
     method: '',
-    plan: '',
+    planName: '',
+    notes: '',
   });
   const isMobile = useIsMobile();
 
   const filteredPayments = payments.filter(payment =>
-    payment.memberName.toLowerCase().includes(searchTerm.toLowerCase())
+    payment.member_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    payment.member_user_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddPayment = () => {
-    if (!newPayment.memberName || !newPayment.amount || !newPayment.method) {
+  const handleAddPayment = async () => {
+    if (!selectedMember || !newPayment.amount || !newPayment.method || !newPayment.planName) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -47,30 +43,29 @@ const PaymentTracking = () => {
       return;
     }
 
-    const payment: Payment = {
-      id: Date.now().toString(),
-      memberName: newPayment.memberName,
+    const paymentData: NewPayment = {
+      member_id: selectedMember.id,
+      member_user_id: selectedMember.user_id,
+      member_name: selectedMember.name,
       amount: parseFloat(newPayment.amount),
-      date: new Date().toISOString().split('T')[0],
-      method: newPayment.method,
-      status: 'completed',
-      plan: newPayment.plan || 'Basic',
+      payment_date: newPayment.paymentDate,
+      payment_method: newPayment.method,
+      plan_name: newPayment.planName,
+      notes: newPayment.notes || undefined,
     };
 
-    setPayments([payment, ...payments]);
-    setNewPayment({ memberName: '', amount: '', method: '', plan: '' });
-    setIsAddDialogOpen(false);
-    
-    toast({
-      title: "Success",
-      description: "Payment recorded successfully",
-    });
+    const success = await addPayment(paymentData);
+    if (success) {
+      setNewPayment({ amount: '', paymentDate: new Date().toISOString().split('T')[0], method: '', planName: '', notes: '' });
+      setSelectedMember(null);
+      setIsAddDialogOpen(false);
+    }
   };
 
-  const sendReminder = (payment: Payment) => {
+  const sendReminder = (payment: any) => {
     toast({
       title: "Reminder Sent",
-      description: `Payment reminder sent to ${payment.memberName}`,
+      description: `Payment reminder sent to ${payment.member_name}`,
     });
   };
 
@@ -83,8 +78,8 @@ const PaymentTracking = () => {
     return variants[status as keyof typeof variants] || '';
   };
 
-  const totalRevenue = payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + p.amount, 0);
-  const pendingAmount = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0);
+  const totalRevenue = payments.filter(p => p.status === 'completed').reduce((sum, p) => sum + Number(p.amount), 0);
+  const pendingAmount = payments.filter(p => p.status === 'pending').reduce((sum, p) => sum + Number(p.amount), 0);
 
   return (
     <div className="space-y-4">
@@ -145,57 +140,80 @@ const PaymentTracking = () => {
               <DialogTitle className={isMobile ? 'text-lg' : ''}>Record New Payment</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="memberName" className={isMobile ? 'text-sm' : ''}>Member Name</Label>
-                <Input
-                  id="memberName"
-                  value={newPayment.memberName}
-                  onChange={(e) => setNewPayment({ ...newPayment, memberName: e.target.value })}
-                  placeholder="Enter member name"
-                  className={isMobile ? 'h-12 text-base mt-1' : ''}
-                />
+              <MemberLookup
+                selectedMember={selectedMember}
+                onMemberSelect={setSelectedMember}
+              />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="amount" className={isMobile ? 'text-sm' : ''}>Amount Paid</Label>
+                  <Input
+                    id="amount"
+                    type="number"
+                    step="0.01"
+                    value={newPayment.amount}
+                    onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
+                    placeholder="0.00"
+                    className={isMobile ? 'h-12 text-base mt-1' : 'mt-1'}
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="paymentDate" className={isMobile ? 'text-sm' : ''}>Payment Date</Label>
+                  <Input
+                    id="paymentDate"
+                    type="date"
+                    value={newPayment.paymentDate}
+                    onChange={(e) => setNewPayment({ ...newPayment, paymentDate: e.target.value })}
+                    className={isMobile ? 'h-12 text-base mt-1' : 'mt-1'}
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="amount" className={isMobile ? 'text-sm' : ''}>Amount</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  value={newPayment.amount}
-                  onChange={(e) => setNewPayment({ ...newPayment, amount: e.target.value })}
-                  placeholder="0.00"
-                  className={isMobile ? 'h-12 text-base mt-1' : ''}
-                />
-              </div>
+
               <div>
                 <Label htmlFor="method" className={isMobile ? 'text-sm' : ''}>Payment Method</Label>
                 <Select onValueChange={(value) => setNewPayment({ ...newPayment, method: value })}>
-                  <SelectTrigger className={isMobile ? 'h-12 text-base mt-1' : ''}>
+                  <SelectTrigger className={isMobile ? 'h-12 text-base mt-1' : 'mt-1'}>
                     <SelectValue placeholder="Select method" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Cash">Cash</SelectItem>
                     <SelectItem value="Card">Credit/Debit Card</SelectItem>
-                    <SelectItem value="Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                     <SelectItem value="UPI">UPI/Digital Wallet</SelectItem>
+                    <SelectItem value="Cheque">Cheque</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              
               <div>
-                <Label htmlFor="plan" className={isMobile ? 'text-sm' : ''}>Plan</Label>
-                <Select onValueChange={(value) => setNewPayment({ ...newPayment, plan: value })}>
-                  <SelectTrigger className={isMobile ? 'h-12 text-base mt-1' : ''}>
-                    <SelectValue placeholder="Select plan" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Basic">Basic - ₹2999/month</SelectItem>
-                    <SelectItem value="Premium">Premium - ₹4999/month</SelectItem>
-                    <SelectItem value="VIP">VIP - ₹7999/month</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="planName" className={isMobile ? 'text-sm' : ''}>Plan Name</Label>
+                <Input
+                  id="planName"
+                  value={newPayment.planName}
+                  onChange={(e) => setNewPayment({ ...newPayment, planName: e.target.value })}
+                  placeholder="Enter plan name (e.g., Monthly Premium, Annual Basic)"
+                  className={isMobile ? 'h-12 text-base mt-1' : 'mt-1'}
+                />
               </div>
+              
+              <div>
+                <Label htmlFor="notes" className={isMobile ? 'text-sm' : ''}>Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={newPayment.notes}
+                  onChange={(e) => setNewPayment({ ...newPayment, notes: e.target.value })}
+                  placeholder="Additional notes about the payment..."
+                  className={isMobile ? 'text-base mt-1' : 'mt-1'}
+                  rows={3}
+                />
+              </div>
+              
               <Button 
                 onClick={handleAddPayment} 
                 className={`w-full bg-emerald-600 hover:bg-emerald-700 ${isMobile ? 'h-12' : ''}`}
+                disabled={!selectedMember}
               >
                 Record Payment
               </Button>
@@ -215,23 +233,23 @@ const PaymentTracking = () => {
                       <IndianRupee className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'} text-white`} />
                     </div>
                     <div>
-                      <h3 className={`font-semibold ${isMobile ? 'text-base' : ''}`}>{payment.memberName}</h3>
-                      <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-gray-600`}>{payment.plan} Plan</p>
+                      <h3 className={`font-semibold ${isMobile ? 'text-base' : ''}`}>{payment.member_name}</h3>
+                      <p className={`${isMobile ? 'text-sm' : 'text-sm'} text-gray-600`}>{payment.plan_name} Plan • ID: {payment.member_user_id}</p>
                     </div>
                   </div>
                   
                   <div className={`grid ${isMobile ? 'grid-cols-2 gap-3' : 'grid-cols-2 md:grid-cols-4 gap-4'} ${isMobile ? 'text-sm' : 'text-sm'}`}>
                     <div>
                       <span className="font-medium">Amount:</span>
-                      <p className={`text-green-600 font-bold ${isMobile ? 'text-base' : ''}`}>₹{payment.amount}</p>
+                      <p className={`text-green-600 font-bold ${isMobile ? 'text-base' : ''}`}>₹{Number(payment.amount).toFixed(2)}</p>
                     </div>
                     <div>
                       <span className="font-medium">Date:</span>
-                      <p>{payment.date}</p>
+                      <p>{new Date(payment.payment_date).toLocaleDateString()}</p>
                     </div>
                     <div>
                       <span className="font-medium">Method:</span>
-                      <p>{payment.method}</p>
+                      <p>{payment.payment_method}</p>
                     </div>
                     <div>
                       <span className="font-medium">Status:</span>
@@ -241,6 +259,12 @@ const PaymentTracking = () => {
                     </div>
                   </div>
                 </div>
+                
+                {payment.notes && (
+                  <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                    <span className="font-medium">Notes:</span> {payment.notes}
+                  </div>
+                )}
                 
                 {payment.status === 'pending' && (
                   <Button
@@ -259,11 +283,19 @@ const PaymentTracking = () => {
         ))}
       </div>
 
-      {filteredPayments.length === 0 && (
+      {loading && (
+        <div className="flex items-center justify-center h-32">
+          <div className="text-lg">Loading payments...</div>
+        </div>
+      )}
+
+      {!loading && filteredPayments.length === 0 && (
         <Card className={`${isMobile ? 'p-6' : 'p-8'} text-center`}>
           <IndianRupee className={`${isMobile ? 'w-16 h-16' : 'w-12 h-12'} mx-auto text-gray-400 mb-4`} />
           <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-medium text-gray-900 mb-2`}>No payments found</h3>
-          <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>Record your first payment to get started</p>
+          <p className={`text-gray-600 ${isMobile ? 'text-sm' : ''}`}>
+            {searchTerm ? 'No payments match your search criteria' : 'Record your first payment to get started'}
+          </p>
         </Card>
       )}
     </div>
