@@ -9,21 +9,38 @@ import { TrendingUp, TrendingDown, Users, DollarSign, Calendar, Download, Clock,
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAdvancedAnalytics } from '@/hooks/useAdvancedAnalytics';
+import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
+import { usePayments } from '@/hooks/usePayments';
 
 const Reports = () => {
   const [reportPeriod, setReportPeriod] = useState('weekly');
   const [activeTab, setActiveTab] = useState('reports');
   const isMobile = useIsMobile();
-  const { analytics, loading } = useAdvancedAnalytics();
+  const { analytics, loading: analyticsLoading } = useAdvancedAnalytics();
+  const { analytics: dashboardData, loading: dashboardLoading } = useDashboardAnalytics();
+  const { payments, loading: paymentsLoading } = usePayments();
+  
+  const loading = analyticsLoading || dashboardLoading || paymentsLoading;
+  
+  // Calculate real-time statistics
+  const currentMonthRevenue = payments
+    .filter(p => new Date(p.payment_date).getMonth() === new Date().getMonth())
+    .reduce((sum, p) => sum + p.amount, 0);
+    
+  const lastMonthRevenue = payments
+    .filter(p => new Date(p.payment_date).getMonth() === new Date().getMonth() - 1)
+    .reduce((sum, p) => sum + p.amount, 0);
+    
+  const revenueChange = lastMonthRevenue > 0 ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100) : 0;
   
   const weeklyData = {
-    revenue: 0,
-    revenueChange: 0,
-    members: 0,
-    memberChange: 0,
-    attendance: 0,
+    revenue: currentMonthRevenue,
+    revenueChange: Math.round(revenueChange),
+    members: dashboardData.totalMembers,
+    memberChange: Math.round(dashboardData.memberGrowthRate),
+    attendance: analytics.attendanceTrends.length > 0 ? analytics.attendanceTrends[analytics.attendanceTrends.length - 1].count : 0,
     attendanceChange: 0,
-    retention: 0,
+    retention: analytics.retentionAnalysis[0] ? Math.round(analytics.retentionAnalysis[0].retentionRate) : 0,
     retentionChange: 0,
   };
 
@@ -190,40 +207,40 @@ const Reports = () => {
               <CardHeader>
                 <CardTitle>Monthly Revenue Summary</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">This Month</span>
-                  <span className="text-lg font-bold text-green-600">₹0</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Last Month</span>
-                  <span className="text-lg font-bold">₹0</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Year to Date</span>
-                  <span className="text-lg font-bold">₹0</span>
-                </div>
-              </CardContent>
+               <CardContent className="space-y-4">
+                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                   <span className="text-sm font-medium">This Month</span>
+                   <span className="text-lg font-bold text-green-600">₹{currentMonthRevenue.toLocaleString()}</span>
+                 </div>
+                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                   <span className="text-sm font-medium">Last Month</span>
+                   <span className="text-lg font-bold">₹{lastMonthRevenue.toLocaleString()}</span>
+                 </div>
+                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                   <span className="text-sm font-medium">Year to Date</span>
+                   <span className="text-lg font-bold">₹{payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}</span>
+                 </div>
+               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle>Membership Overview</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">New Members</span>
-                  <span className="text-lg font-bold text-blue-600">0</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Active Members</span>
-                  <span className="text-lg font-bold">0</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Expired Members</span>
-                  <span className="text-lg font-bold text-red-600">0</span>
-                </div>
-              </CardContent>
+               <CardContent className="space-y-4">
+                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                   <span className="text-sm font-medium">New Members</span>
+                   <span className="text-lg font-bold text-blue-600">{dashboardData.newMembersThisMonth}</span>
+                 </div>
+                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                   <span className="text-sm font-medium">Active Members</span>
+                   <span className="text-lg font-bold">{dashboardData.activeMembers}</span>
+                 </div>
+                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                   <span className="text-sm font-medium">Total Members</span>
+                   <span className="text-lg font-bold">{dashboardData.totalMembers}</span>
+                 </div>
+               </CardContent>
             </Card>
           </div>
 
