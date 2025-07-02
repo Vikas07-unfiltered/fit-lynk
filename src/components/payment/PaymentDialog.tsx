@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { IndianRupee } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 import { NewPayment } from '@/types/payment';
 import MemberLookup from './MemberLookup';
 
@@ -18,6 +19,7 @@ interface PaymentDialogProps {
 
 const PaymentDialog = ({ isOpen, onOpenChange, onAddPayment }: PaymentDialogProps) => {
   const isMobile = useIsMobile();
+  const { plans } = useMembershipPlans();
   const [selectedMember, setSelectedMember] = useState<{ id: string; user_id: string; name: string } | null>(null);
   const [newPayment, setNewPayment] = useState({
     amount: '',
@@ -118,14 +120,19 @@ const PaymentDialog = ({ isOpen, onOpenChange, onAddPayment }: PaymentDialogProp
           </div>
           
           <div>
-            <Label htmlFor="planName" className={isMobile ? 'text-sm' : ''}>Plan Name</Label>
-            <Input
-              id="planName"
-              value={newPayment.planName}
-              onChange={(e) => setNewPayment({ ...newPayment, planName: e.target.value })}
-              placeholder="Enter plan name (e.g., Monthly Premium, Annual Basic)"
-              className={isMobile ? 'h-12 text-base mt-1' : 'mt-1'}
-            />
+            <Label htmlFor="planName" className={isMobile ? 'text-sm' : ''}>Membership Plan</Label>
+            <Select onValueChange={(value) => setNewPayment({ ...newPayment, planName: value })}>
+              <SelectTrigger className={isMobile ? 'h-12 text-base mt-1' : 'mt-1'}>
+                <SelectValue placeholder="Select membership plan" />
+              </SelectTrigger>
+              <SelectContent>
+                {plans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.name}>
+                    {plan.name} - ₹{plan.price} ({plan.duration_months} month{plan.duration_months > 1 ? 's' : ''})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div>
