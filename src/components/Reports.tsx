@@ -1,8 +1,11 @@
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, BarChart3, Users } from 'lucide-react';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Download, FileText, BarChart3, Users, TrendingUp, TrendingDown, DollarSign, Calendar, Clock, UserCheck } from 'lucide-react';
 import { useState } from 'react';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { ResponsiveContainer, BarChart, LineChart, XAxis, YAxis, Bar, Line } from 'recharts';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAdvancedAnalytics } from '@/hooks/useAdvancedAnalytics';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
@@ -12,12 +15,15 @@ import { exportToPDF, exportToExcel } from './reports/ExportUtils';
 import ReportsTab from './reports/ReportsTab';
 import AnalyticsTab from './reports/AnalyticsTab';
 import MembersTab from './reports/MembersTab';
+import StatCard from './reports/StatCard';
 
 const Reports = () => {
   const [reportPeriod, setReportPeriod] = useState('weekly');
   const [activeTab, setActiveTab] = useState('reports');
   const isMobile = useIsMobile();
   const { analytics, loading } = useAdvancedAnalytics();
+  const { analytics: dashboardData } = useDashboardAnalytics();
+  const { members } = useMembers();
   
   const weeklyData = {
     revenue: 0,
@@ -51,46 +57,25 @@ const Reports = () => {
   const topEngagedMembers = analytics.memberEngagement.slice(0, 5);
   const recentTrends = analytics.attendanceTrends.slice(-30);
 
-  const StatCard = ({ 
-    title, 
-    value, 
-    change, 
-    icon: Icon, 
-    color 
-  }: { 
-    title: string; 
-    value: string | number; 
-    change: number; 
-    icon: any; 
-    color: string; 
-  }) => (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
-          <Icon className={`w-4 h-4 ${color}`} />
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="text-2xl font-bold mb-1">{value}</div>
-        <div className="flex items-center text-xs">
-          {change > 0 ? (
-            <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
-          ) : change < 0 ? (
-            <TrendingDown className="w-3 h-3 text-red-600 mr-1" />
-          ) : null}
-          {change !== 0 && (
-            <>
-              <span className={change > 0 ? 'text-green-600' : 'text-red-600'}>
-                {Math.abs(change)}%
-              </span>
-              <span className="text-gray-500 ml-1">from last {reportPeriod}</span>
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  // Wrap export functions for use as button click handlers
+  const handleExportPDFClick = () => {
+    exportToPDF(
+      activeTab,
+      members,
+      dashboardData.monthlyRevenue ?? 0,
+      0, // Optionally compute lastMonthRevenue if available
+      dashboardData
+    );
+  };
+  const handleExportExcelClick = () => {
+    exportToExcel(
+      activeTab,
+      members,
+      dashboardData.monthlyRevenue ?? 0,
+      0, // Optionally compute lastMonthRevenue if available
+      dashboardData
+    );
+  };
 
   if (loading) {
     return (
@@ -129,11 +114,11 @@ const Reports = () => {
             </SelectContent>
           </Select>
           
-          <Button variant="outline" onClick={handleExportPDF} className="hover-scale">
+          <Button variant="outline" onClick={handleExportPDFClick} className="hover-scale">
             <Download className="w-4 h-4 mr-2" />
             PDF
           </Button>
-          <Button variant="outline" onClick={handleExportExcel} className="hover-scale">
+          <Button variant="outline" onClick={handleExportExcelClick} className="hover-scale">
             <Download className="w-4 h-4 mr-2" />
             Excel
           </Button>
