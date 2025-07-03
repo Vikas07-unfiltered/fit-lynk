@@ -10,57 +10,63 @@ import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAdvancedAnalytics } from '@/hooks/useAdvancedAnalytics';
 
+// --- Static Configs & Constants ---
+const WEEKLY_DATA = {
+  revenue: 0,
+  revenueChange: 0,
+  members: 0,
+  memberChange: 0,
+  attendance: 0,
+  attendanceChange: 0,
+  retention: 0,
+  retentionChange: 0,
+};
+
+const CHART_CONFIG = {
+  count: {
+    label: "Count",
+    color: "#10b981",
+  },
+  revenue: {
+    label: "Revenue",
+    color: "#3b82f6",
+  },
+  forecast: {
+    label: "Forecast",
+    color: "#f59e0b",
+  },
+};
+
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+// --- Main Reports Component ---
 const Reports = () => {
-  const [reportPeriod, setReportPeriod] = useState('weekly');
-  const [activeTab, setActiveTab] = useState('reports');
+  // Use string state for compatibility with Select/Tabs
+  const [reportPeriod, setReportPeriod] = useState<string>('weekly');
+  const [activeTab, setActiveTab] = useState<string>('reports');
   const isMobile = useIsMobile();
   const { analytics, loading } = useAdvancedAnalytics();
-  
-  const weeklyData = {
-    revenue: 0,
-    revenueChange: 0,
-    members: 0,
-    memberChange: 0,
-    attendance: 0,
-    attendanceChange: 0,
-    retention: 0,
-    retentionChange: 0,
+
+  // Memoize processed analytics for performance
+  const topPeakHours = analytics.peakHours?.slice(0, 8) || [];
+  const topEngagedMembers = analytics.memberEngagement?.slice(0, 5) || [];
+  const recentTrends = analytics.attendanceTrends?.slice(-30) || [];
+
+  // You may want to replace WEEKLY_DATA with real data if available
+  const weeklyData = WEEKLY_DATA;
+  const chartConfig = CHART_CONFIG;
+
+  // --- StatCard Subcomponent ---
+  type StatCardProps = {
+    title: string;
+    value: string | number;
+    change: number;
+    icon: React.ElementType;
+    color: string;
+    periodLabel: string;
   };
 
-  const chartConfig = {
-    count: {
-      label: "Count",
-      color: "#10b981",
-    },
-    revenue: {
-      label: "Revenue",
-      color: "#3b82f6",
-    },
-    forecast: {
-      label: "Forecast",
-      color: "#f59e0b",
-    },
-  };
-
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-  const topPeakHours = analytics.peakHours.slice(0, 8);
-  const topEngagedMembers = analytics.memberEngagement.slice(0, 5);
-  const recentTrends = analytics.attendanceTrends.slice(-30);
-
-  const StatCard = ({ 
-    title, 
-    value, 
-    change, 
-    icon: Icon, 
-    color 
-  }: { 
-    title: string; 
-    value: string | number; 
-    change: number; 
-    icon: any; 
-    color: string; 
-  }) => (
+  const StatCard = ({ title, value, change, icon: Icon, color, periodLabel }: StatCardProps) => (
     <Card className="h-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
@@ -81,7 +87,7 @@ const Reports = () => {
               <span className={change > 0 ? 'text-green-600' : 'text-red-600'}>
                 {Math.abs(change)}%
               </span>
-              <span className="text-gray-500 ml-1">from last {reportPeriod}</span>
+              <span className="text-gray-500 ml-1">from last {periodLabel}</span>
             </>
           )}
         </div>
@@ -119,7 +125,7 @@ const Reports = () => {
         </div>
         
         <div className="flex gap-2 w-full sm:w-auto">
-          <Select value={reportPeriod} onValueChange={setReportPeriod}>
+          <Select value={reportPeriod} onValueChange={(val) => setReportPeriod(val)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -138,7 +144,7 @@ const Reports = () => {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val)} className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
@@ -160,6 +166,7 @@ const Reports = () => {
               change={weeklyData.revenueChange}
               icon={DollarSign}
               color="text-green-600"
+              periodLabel={reportPeriod}
             />
             <StatCard
               title="Active Members"
@@ -167,6 +174,7 @@ const Reports = () => {
               change={weeklyData.memberChange}
               icon={Users}
               color="text-blue-600"
+              periodLabel={reportPeriod}
             />
             <StatCard
               title="Attendance"
@@ -174,6 +182,7 @@ const Reports = () => {
               change={weeklyData.attendanceChange}
               icon={Calendar}
               color="text-purple-600"
+              periodLabel={reportPeriod}
             />
             <StatCard
               title="Retention Rate"
@@ -181,66 +190,64 @@ const Reports = () => {
               change={weeklyData.retentionChange}
               icon={TrendingUp}
               color="text-emerald-600"
+              periodLabel={reportPeriod}
             />
           </div>
 
-          {/* Reports Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Monthly Revenue Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">This Month</span>
-                  <span className="text-lg font-bold text-green-600">₹0</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Last Month</span>
-                  <span className="text-lg font-bold">₹0</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Year to Date</span>
-                  <span className="text-lg font-bold">₹0</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Membership Overview</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">New Members</span>
-                  <span className="text-lg font-bold text-blue-600">0</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Active Members</span>
-                  <span className="text-lg font-bold">0</span>
-                </div>
-                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Expired Members</span>
-                  <span className="text-lg font-bold text-red-600">0</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Financial Reports */}
           <Card>
             <CardHeader>
-              <CardTitle>Financial Reports</CardTitle>
+              <CardTitle>Monthly Revenue Summary</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <DollarSign className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                <p className="text-gray-600">No financial data available</p>
-                <p className="text-gray-500 text-sm">Start adding payment records to see financial reports</p>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">This Month</span>
+                <span className="text-lg font-bold text-green-600">₹0</span>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">Last Month</span>
+                <span className="text-lg font-bold">₹0</span>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">Year to Date</span>
+                <span className="text-lg font-bold">₹0</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Membership Overview</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">New Members</span>
+                <span className="text-lg font-bold text-blue-600">0</span>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">Active Members</span>
+                <span className="text-lg font-bold">0</span>
+              </div>
+              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium">Expired Members</span>
+                <span className="text-lg font-bold text-red-600">0</span>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Financial Reports */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Financial Reports</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <DollarSign className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+              <p className="text-gray-600">No financial data available</p>
+              <p className="text-gray-500 text-sm">Start adding payment records to see financial reports</p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
@@ -252,6 +259,7 @@ const Reports = () => {
               change={0}
               icon={Clock}
               color="text-green-600"
+              periodLabel={reportPeriod}
             />
             <StatCard
               title="Top Member"
@@ -259,6 +267,7 @@ const Reports = () => {
               change={0}
               icon={UserCheck}
               color="text-blue-600"
+              periodLabel={reportPeriod}
             />
             <StatCard
               title="Avg Daily Visits"
@@ -266,6 +275,7 @@ const Reports = () => {
               change={weeklyData.attendanceChange}
               icon={Calendar}
               color="text-purple-600"
+              periodLabel={reportPeriod}
             />
             <StatCard
               title="Retention Rate"
@@ -273,6 +283,7 @@ const Reports = () => {
               change={weeklyData.retentionChange}
               icon={TrendingUp}
               color="text-emerald-600"
+              periodLabel={reportPeriod}
             />
           </div>
 
