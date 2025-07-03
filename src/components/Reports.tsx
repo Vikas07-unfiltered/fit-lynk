@@ -244,19 +244,6 @@ const Reports = () => {
             </Card>
           </div>
 
-          {/* Financial Reports */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Financial Reports</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <DollarSign className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                <p className="text-gray-600">No financial data available</p>
-                <p className="text-gray-500 text-sm">Start adding payment records to see financial reports</p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Analytics Tab */}
