@@ -1,22 +1,17 @@
-
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { BarChart, Bar, XAxis, YAxis, LineChart, Line, ResponsiveContainer } from 'recharts';
-import { TrendingUp, TrendingDown, Users, DollarSign, Calendar, Download, Clock, UserCheck, FileText, BarChart3 } from 'lucide-react';
+import { Download, FileText, BarChart3, Users } from 'lucide-react';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAdvancedAnalytics } from '@/hooks/useAdvancedAnalytics';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
 import { usePayments } from '@/hooks/usePayments';
 import { useMembers } from '@/hooks/useMembers';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import { exportToPDF, exportToExcel } from './reports/ExportUtils';
+import ReportsTab from './reports/ReportsTab';
+import AnalyticsTab from './reports/AnalyticsTab';
+import MembersTab from './reports/MembersTab';
 
 const Reports = () => {
   const [reportPeriod, setReportPeriod] = useState('weekly');
@@ -66,150 +61,28 @@ const Reports = () => {
     },
   };
 
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
-
   const topPeakHours = analytics.peakHours.slice(0, 8);
   const topEngagedMembers = analytics.memberEngagement.slice(0, 5);
   const recentTrends = analytics.attendanceTrends.slice(-30);
 
-  // Export functions
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(20);
-    doc.text('Gym Reports', 20, 20);
-    doc.setFontSize(12);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
-    
-    // Add member list if on members tab
-    if (activeTab === 'members') {
-      doc.setFontSize(16);
-      doc.text('Member List', 20, 50);
-      
-      const memberData = members.map(member => [
-        member.user_id,
-        member.name,
-        member.phone,
-        member.plan,
-        member.status.charAt(0).toUpperCase() + member.status.slice(1),
-        new Date(member.join_date).toLocaleDateString()
-      ]);
-      
-      autoTable(doc, {
-        head: [['Member ID', 'Name', 'Phone', 'Plan', 'Status', 'Join Date']],
-        body: memberData,
-        startY: 60,
-      });
-    } else {
-      // Add financial summary
-      doc.setFontSize(16);
-      doc.text('Financial Summary', 20, 50);
-      
-      const summaryData = [
-        ['This Month Revenue', `₹${currentMonthRevenue.toLocaleString()}`],
-        ['Last Month Revenue', `₹${lastMonthRevenue.toLocaleString()}`],
-        ['Total Members', dashboardData.totalMembers.toString()],
-        ['Active Members', dashboardData.activeMembers.toString()],
-        ['New Members This Month', dashboardData.newMembersThisMonth.toString()]
-      ];
-      
-      autoTable(doc, {
-        body: summaryData,
-        startY: 60,
-      });
-    }
-    
-    doc.save(`gym-report-${new Date().toISOString().split('T')[0]}.pdf`);
+  const handleExportPDF = () => {
+    exportToPDF(activeTab, members, currentMonthRevenue, lastMonthRevenue, dashboardData);
   };
 
-  const exportToExcel = () => {
-    let data;
-    let filename;
-    
-    if (activeTab === 'members') {
-      data = members.map(member => ({
-        'Member ID': member.user_id,
-        'Name': member.name,
-        'Phone': member.phone,
-        'Plan': member.plan,
-        'Status': member.status.charAt(0).toUpperCase() + member.status.slice(1),
-        'Join Date': new Date(member.join_date).toLocaleDateString(),
-        'Last Payment': member.last_payment ? new Date(member.last_payment).toLocaleDateString() : 'N/A'
-      }));
-      filename = 'gym-members';
-    } else {
-      data = [
-        { 'Metric': 'This Month Revenue', 'Value': `₹${currentMonthRevenue.toLocaleString()}` },
-        { 'Metric': 'Last Month Revenue', 'Value': `₹${lastMonthRevenue.toLocaleString()}` },
-        { 'Metric': 'Total Members', 'Value': dashboardData.totalMembers },
-        { 'Metric': 'Active Members', 'Value': dashboardData.activeMembers },
-        { 'Metric': 'New Members This Month', 'Value': dashboardData.newMembersThisMonth }
-      ];
-      filename = 'gym-reports';
-    }
-    
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Report');
-    XLSX.writeFile(wb, `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
+  const handleExportExcel = () => {
+    exportToExcel(activeTab, members, currentMonthRevenue, lastMonthRevenue, dashboardData);
   };
-
-  const StatCard = ({
-    title, 
-    value, 
-    change, 
-    icon: Icon, 
-    color 
-  }: { 
-    title: string; 
-    value: string | number; 
-    change: number; 
-    icon: any; 
-    color: string; 
-  }) => (
-    <Card className="h-full">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
-          <Icon className={`w-4 h-4 ${color}`} />
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="text-2xl font-bold mb-1">{value}</div>
-        <div className="flex items-center text-xs">
-          {change > 0 ? (
-            <TrendingUp className="w-3 h-3 text-green-600 mr-1" />
-          ) : change < 0 ? (
-            <TrendingDown className="w-3 h-3 text-red-600 mr-1" />
-          ) : null}
-          {change !== 0 && (
-            <>
-              <span className={change > 0 ? 'text-green-600' : 'text-red-600'}>
-                {Math.abs(change)}%
-              </span>
-              <span className="text-gray-500 ml-1">from last {reportPeriod}</span>
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
 
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="pb-2">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-full"></div>
-              </CardContent>
-            </Card>
+            <div key={i} className="animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-full"></div>
+            </div>
           ))}
         </div>
       </div>
@@ -217,7 +90,7 @@ const Reports = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <div>
@@ -237,11 +110,11 @@ const Reports = () => {
             </SelectContent>
           </Select>
           
-          <Button variant="outline" onClick={exportToPDF}>
+          <Button variant="outline" onClick={handleExportPDF} className="hover-scale">
             <Download className="w-4 h-4 mr-2" />
             PDF
           </Button>
-          <Button variant="outline" onClick={exportToExcel}>
+          <Button variant="outline" onClick={handleExportExcel} className="hover-scale">
             <Download className="w-4 h-4 mr-2" />
             Excel
           </Button>
@@ -265,415 +138,28 @@ const Reports = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* Reports Tab */}
-        <TabsContent value="reports" className="space-y-6">
-          {/* Basic Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              title="Total Revenue"
-              value={`₹${weeklyData.revenue.toLocaleString()}`}
-              change={weeklyData.revenueChange}
-              icon={DollarSign}
-              color="text-green-600"
-            />
-            <StatCard
-              title="Active Members"
-              value={weeklyData.members}
-              change={weeklyData.memberChange}
-              icon={Users}
-              color="text-blue-600"
-            />
-            <StatCard
-              title="Attendance"
-              value={weeklyData.attendance}
-              change={weeklyData.attendanceChange}
-              icon={Calendar}
-              color="text-purple-600"
-            />
-            <StatCard
-              title="Retention Rate"
-              value={`${weeklyData.retention}%`}
-              change={weeklyData.retentionChange}
-              icon={TrendingUp}
-              color="text-emerald-600"
-            />
-          </div>
+        <ReportsTab
+          currentMonthRevenue={currentMonthRevenue}
+          lastMonthRevenue={lastMonthRevenue}
+          revenueChange={revenueChange}
+          memberChange={weeklyData.memberChange}
+          attendanceChange={weeklyData.attendanceChange}
+          retentionChange={weeklyData.retentionChange}
+          weeklyData={weeklyData}
+          dashboardData={dashboardData}
+          payments={payments}
+        />
 
-          {/* Reports Summary */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Monthly Revenue Summary</CardTitle>
-              </CardHeader>
-               <CardContent className="space-y-4">
-                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                   <span className="text-sm font-medium">This Month</span>
-                   <span className="text-lg font-bold text-green-600">₹{currentMonthRevenue.toLocaleString()}</span>
-                 </div>
-                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                   <span className="text-sm font-medium">Last Month</span>
-                   <span className="text-lg font-bold">₹{lastMonthRevenue.toLocaleString()}</span>
-                 </div>
-                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                   <span className="text-sm font-medium">Year to Date</span>
-                   <span className="text-lg font-bold">₹{payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}</span>
-                 </div>
-               </CardContent>
-            </Card>
+        <AnalyticsTab
+          analytics={analytics}
+          topPeakHours={topPeakHours}
+          topEngagedMembers={topEngagedMembers}
+          recentTrends={recentTrends}
+          weeklyData={weeklyData}
+          chartConfig={chartConfig}
+        />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Membership Overview</CardTitle>
-              </CardHeader>
-               <CardContent className="space-y-4">
-                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                   <span className="text-sm font-medium">New Members</span>
-                   <span className="text-lg font-bold text-blue-600">{dashboardData.newMembersThisMonth}</span>
-                 </div>
-                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                   <span className="text-sm font-medium">Active Members</span>
-                   <span className="text-lg font-bold">{dashboardData.activeMembers}</span>
-                 </div>
-                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                   <span className="text-sm font-medium">Total Members</span>
-                   <span className="text-lg font-bold">{dashboardData.totalMembers}</span>
-                 </div>
-               </CardContent>
-            </Card>
-          </div>
-
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
-          {/* Analytics Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              title="Peak Hour"
-              value={topPeakHours[0] ? `${topPeakHours[0].hour}:00` : 'N/A'}
-              change={0}
-              icon={Clock}
-              color="text-green-600"
-            />
-            <StatCard
-              title="Top Member"
-              value={topEngagedMembers[0] ? topEngagedMembers[0].memberName.split(' ')[0] : 'N/A'}
-              change={0}
-              icon={UserCheck}
-              color="text-blue-600"
-            />
-            <StatCard
-              title="Avg Daily Visits"
-              value={recentTrends.length > 0 ? Math.round(recentTrends.reduce((sum, t) => sum + t.count, 0) / recentTrends.length) : 0}
-              change={weeklyData.attendanceChange}
-              icon={Calendar}
-              color="text-purple-600"
-            />
-            <StatCard
-              title="Retention Rate"
-              value={analytics.retentionAnalysis[0] ? `${Math.round(analytics.retentionAnalysis[0].retentionRate)}%` : '0%'}
-              change={weeklyData.retentionChange}
-              icon={TrendingUp}
-              color="text-emerald-600"
-            />
-          </div>
-
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Peak Hours Chart */}
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Peak Hours Analysis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
-                  {topPeakHours.length > 0 ? (
-                    <ChartContainer config={chartConfig} className="h-full w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={topPeakHours} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                          <XAxis 
-                            dataKey="hour" 
-                            tickFormatter={(value) => `${value}:00`}
-                            fontSize={12}
-                          />
-                          <YAxis fontSize={12} />
-                          <ChartTooltip 
-                            content={<ChartTooltipContent />}
-                            formatter={(value, name) => [`${value} visits`, `${name}:00`]}
-                          />
-                          <Bar dataKey="count" fill="var(--color-count)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                      <Clock className="w-12 h-12 text-gray-400 mb-2" />
-                      <p className="text-gray-600">No peak hours data available</p>
-                      <p className="text-gray-500 text-sm">Data will appear here once you have attendance records</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Attendance Trends */}
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>30-Day Attendance Trend</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
-                  {recentTrends.length > 0 ? (
-                    <ChartContainer config={chartConfig} className="h-full w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={recentTrends} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                          <XAxis 
-                            dataKey="date" 
-                            tickFormatter={(value) => new Date(value).getDate().toString()}
-                            fontSize={12}
-                          />
-                          <YAxis fontSize={12} />
-                          <ChartTooltip 
-                            content={<ChartTooltipContent />}
-                            formatter={(value) => [`${value} visits`, 'Attendance']}
-                          />
-                          <Line 
-                            type="monotone" 
-                            dataKey="count" 
-                            stroke="var(--color-count)" 
-                            strokeWidth={2}
-                            dot={{ fill: 'var(--color-count)', strokeWidth: 2, r: 4 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                      <Calendar className="w-12 h-12 text-gray-400 mb-2" />
-                      <p className="text-gray-600">No attendance trends available</p>
-                      <p className="text-gray-500 text-sm">Trends will appear here once you start tracking attendance</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Revenue Forecast */}
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Revenue Forecast</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
-                  {analytics.revenueForecast.length > 0 ? (
-                    <ChartContainer config={chartConfig} className="h-full w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={analytics.revenueForecast} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                          <XAxis dataKey="month" fontSize={12} />
-                          <YAxis fontSize={12} />
-                          <ChartTooltip 
-                            content={<ChartTooltipContent />}
-                            formatter={(value, name) => [`₹${Math.round(Number(value))}`, name === 'actualRevenue' ? 'Actual' : 'Forecast']}
-                          />
-                          <Bar dataKey="actualRevenue" fill="var(--color-revenue)" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="forecastRevenue" fill="var(--color-forecast)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                      <TrendingUp className="w-12 h-12 text-gray-400 mb-2" />
-                      <p className="text-gray-600">No revenue data available</p>
-                      <p className="text-gray-500 text-sm">Revenue trends will appear here once you have payment data</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Member Engagement */}
-            <Card className="h-full">
-              <CardHeader>
-                <CardTitle>Top Member Engagement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[300px] w-full">
-                  {topEngagedMembers.length > 0 ? (
-                    <div className="space-y-4 pt-4">
-                      {topEngagedMembers.slice(0, 5).map((member, index) => (
-                        <div key={member.memberId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
-                            <div>
-                              <span className="text-sm font-medium">{member.memberName}</span>
-                              <p className="text-xs text-gray-500">{member.attendanceCount} visits</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-green-600 h-2 rounded-full transition-all duration-300" 
-                                style={{ width: `${member.score}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs text-gray-600">{Math.round(member.score)}%</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-center">
-                      <Users className="w-12 h-12 text-gray-400 mb-2" />
-                      <p className="text-gray-600">No member engagement data</p>
-                      <p className="text-gray-500 text-sm">Top performing members will appear here</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Retention Analysis Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Member Retention Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {analytics.retentionAnalysis.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Period</th>
-                        <th className="text-left text-sm font-medium text-gray-500 pb-3">New Members</th>
-                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Active</th>
-                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Churned</th>
-                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Retention Rate</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analytics.retentionAnalysis.map((period, index) => (
-                        <tr key={index} className="border-b last:border-b-0">
-                          <td className="py-3 text-sm font-medium">{period.period}</td>
-                          <td className="py-3 text-sm">{period.newMembers}</td>
-                          <td className="py-3 text-sm">{period.activeMembers}</td>
-                          <td className="py-3 text-sm">{period.churnedMembers}</td>
-                          <td className="py-3 text-sm">
-                            <span className={`font-medium px-2 py-1 rounded-full text-xs ${
-                              period.retentionRate > 80 
-                                ? 'bg-green-100 text-green-700' 
-                                : period.retentionRate > 60 
-                                ? 'bg-yellow-100 text-yellow-700' 
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              {Math.round(period.retentionRate)}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                  <p className="text-gray-600">No retention data available</p>
-                  <p className="text-gray-500 text-sm">Retention analysis will appear here once you have member data</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Members Tab */}
-        <TabsContent value="members" className="space-y-6">
-          {/* Member Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard
-              title="Total Members"
-              value={members.length}
-              change={0}
-              icon={Users}
-              color="text-blue-600"
-            />
-            <StatCard
-              title="Active Members"
-              value={members.filter(m => m.status === 'active').length}
-              change={0}
-              icon={UserCheck}
-              color="text-green-600"
-            />
-            <StatCard
-              title="Inactive Members"
-              value={members.filter(m => m.status === 'inactive').length}
-              change={0}
-              icon={Users}
-              color="text-red-600"
-            />
-            <StatCard
-              title="New This Month"
-              value={members.filter(m => new Date(m.join_date).getMonth() === new Date().getMonth()).length}
-              change={0}
-              icon={TrendingUp}
-              color="text-emerald-600"
-            />
-          </div>
-
-          {/* Member List Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Complete Member List</CardTitle>
-              <p className="text-sm text-gray-600">View all gym members with their current status and details</p>
-            </CardHeader>
-            <CardContent>
-              {members.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Member ID</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Phone</TableHead>
-                        <TableHead>Plan</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Join Date</TableHead>
-                        <TableHead>Last Payment</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {members.map((member) => (
-                        <TableRow key={member.id}>
-                          <TableCell className="font-medium">{member.user_id}</TableCell>
-                          <TableCell>{member.name}</TableCell>
-                          <TableCell>{member.phone}</TableCell>
-                          <TableCell>{member.plan}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={member.status === 'active' ? 'default' : 'secondary'}
-                              className={member.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
-                            >
-                              {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{new Date(member.join_date).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            {member.last_payment ? new Date(member.last_payment).toLocaleDateString() : 'No payment'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                  <p className="text-gray-600">No members found</p>
-                  <p className="text-gray-500 text-sm">Add members to see them listed here</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <MembersTab members={members} />
       </Tabs>
     </div>
   );
