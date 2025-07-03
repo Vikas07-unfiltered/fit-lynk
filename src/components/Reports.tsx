@@ -11,6 +11,12 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAdvancedAnalytics } from '@/hooks/useAdvancedAnalytics';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
 import { usePayments } from '@/hooks/usePayments';
+import { useMembers } from '@/hooks/useMembers';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 const Reports = () => {
   const [reportPeriod, setReportPeriod] = useState('weekly');
@@ -19,8 +25,9 @@ const Reports = () => {
   const { analytics, loading: analyticsLoading } = useAdvancedAnalytics();
   const { analytics: dashboardData, loading: dashboardLoading } = useDashboardAnalytics();
   const { payments, loading: paymentsLoading } = usePayments();
+  const { members, loading: membersLoading } = useMembers();
   
-  const loading = analyticsLoading || dashboardLoading || paymentsLoading;
+  const loading = analyticsLoading || dashboardLoading || paymentsLoading || membersLoading;
   
   // Calculate real-time statistics
   const currentMonthRevenue = payments
@@ -65,7 +72,90 @@ const Reports = () => {
   const topEngagedMembers = analytics.memberEngagement.slice(0, 5);
   const recentTrends = analytics.attendanceTrends.slice(-30);
 
-  const StatCard = ({ 
+  // Export functions
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text('Gym Reports', 20, 20);
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+    
+    // Add member list if on members tab
+    if (activeTab === 'members') {
+      doc.setFontSize(16);
+      doc.text('Member List', 20, 50);
+      
+      const memberData = members.map(member => [
+        member.user_id,
+        member.name,
+        member.phone,
+        member.plan,
+        member.status.charAt(0).toUpperCase() + member.status.slice(1),
+        new Date(member.join_date).toLocaleDateString()
+      ]);
+      
+      autoTable(doc, {
+        head: [['Member ID', 'Name', 'Phone', 'Plan', 'Status', 'Join Date']],
+        body: memberData,
+        startY: 60,
+      });
+    } else {
+      // Add financial summary
+      doc.setFontSize(16);
+      doc.text('Financial Summary', 20, 50);
+      
+      const summaryData = [
+        ['This Month Revenue', `₹${currentMonthRevenue.toLocaleString()}`],
+        ['Last Month Revenue', `₹${lastMonthRevenue.toLocaleString()}`],
+        ['Total Members', dashboardData.totalMembers.toString()],
+        ['Active Members', dashboardData.activeMembers.toString()],
+        ['New Members This Month', dashboardData.newMembersThisMonth.toString()]
+      ];
+      
+      autoTable(doc, {
+        body: summaryData,
+        startY: 60,
+      });
+    }
+    
+    doc.save(`gym-report-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const exportToExcel = () => {
+    let data;
+    let filename;
+    
+    if (activeTab === 'members') {
+      data = members.map(member => ({
+        'Member ID': member.user_id,
+        'Name': member.name,
+        'Phone': member.phone,
+        'Plan': member.plan,
+        'Status': member.status.charAt(0).toUpperCase() + member.status.slice(1),
+        'Join Date': new Date(member.join_date).toLocaleDateString(),
+        'Last Payment': member.last_payment ? new Date(member.last_payment).toLocaleDateString() : 'N/A'
+      }));
+      filename = 'gym-members';
+    } else {
+      data = [
+        { 'Metric': 'This Month Revenue', 'Value': `₹${currentMonthRevenue.toLocaleString()}` },
+        { 'Metric': 'Last Month Revenue', 'Value': `₹${lastMonthRevenue.toLocaleString()}` },
+        { 'Metric': 'Total Members', 'Value': dashboardData.totalMembers },
+        { 'Metric': 'Active Members', 'Value': dashboardData.activeMembers },
+        { 'Metric': 'New Members This Month', 'Value': dashboardData.newMembersThisMonth }
+      ];
+      filename = 'gym-reports';
+    }
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Report');
+    XLSX.writeFile(wb, `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const StatCard = ({
     title, 
     value, 
     change, 
@@ -147,16 +237,20 @@ const Reports = () => {
             </SelectContent>
           </Select>
           
-          <Button variant="outline">
+          <Button variant="outline" onClick={exportToPDF}>
             <Download className="w-4 h-4 mr-2" />
-            Export
+            PDF
+          </Button>
+          <Button variant="outline" onClick={exportToExcel}>
+            <Download className="w-4 h-4 mr-2" />
+            Excel
           </Button>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Reports
@@ -164,6 +258,10 @@ const Reports = () => {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             Analytics
+          </TabsTrigger>
+          <TabsTrigger value="members" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Members
           </TabsTrigger>
         </TabsList>
 
@@ -481,6 +579,96 @@ const Reports = () => {
                   <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                   <p className="text-gray-600">No retention data available</p>
                   <p className="text-gray-500 text-sm">Retention analysis will appear here once you have member data</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Members Tab */}
+        <TabsContent value="members" className="space-y-6">
+          {/* Member Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Members"
+              value={members.length}
+              change={0}
+              icon={Users}
+              color="text-blue-600"
+            />
+            <StatCard
+              title="Active Members"
+              value={members.filter(m => m.status === 'active').length}
+              change={0}
+              icon={UserCheck}
+              color="text-green-600"
+            />
+            <StatCard
+              title="Inactive Members"
+              value={members.filter(m => m.status === 'inactive').length}
+              change={0}
+              icon={Users}
+              color="text-red-600"
+            />
+            <StatCard
+              title="New This Month"
+              value={members.filter(m => new Date(m.join_date).getMonth() === new Date().getMonth()).length}
+              change={0}
+              icon={TrendingUp}
+              color="text-emerald-600"
+            />
+          </div>
+
+          {/* Member List Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Complete Member List</CardTitle>
+              <p className="text-sm text-gray-600">View all gym members with their current status and details</p>
+            </CardHeader>
+            <CardContent>
+              {members.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Member ID</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead>Plan</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Join Date</TableHead>
+                        <TableHead>Last Payment</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {members.map((member) => (
+                        <TableRow key={member.id}>
+                          <TableCell className="font-medium">{member.user_id}</TableCell>
+                          <TableCell>{member.name}</TableCell>
+                          <TableCell>{member.phone}</TableCell>
+                          <TableCell>{member.plan}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={member.status === 'active' ? 'default' : 'secondary'}
+                              className={member.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
+                            >
+                              {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(member.join_date).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            {member.last_payment ? new Date(member.last_payment).toLocaleDateString() : 'No payment'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+                  <p className="text-gray-600">No members found</p>
+                  <p className="text-gray-500 text-sm">Add members to see them listed here</p>
                 </div>
               )}
             </CardContent>
