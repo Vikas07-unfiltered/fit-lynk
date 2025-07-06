@@ -23,7 +23,7 @@ serve(async (req) => {
     const memberId = requestBody.member_id;
     const daysBeforeExpiry = requestBody.days_before || 5;
 
-    if (!notificationType || !memberId) {
+    if (!notificationType || (!memberId && notificationType !== 'expiry_bulk')) {
       return new Response(JSON.stringify({ error: 'Missing notification type or member ID' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -124,12 +124,12 @@ serve(async (req) => {
 
         let message;
         if (notificationType === 'welcome') {
-          message = `Welcome to ${gymName}, ${member.name}! Your ${member.plan} plan is active. Let’s get started!`;
+          message = `Welcome to ${gymName}, ${member.name} (ID: ${member.id})! Your ${member.plan} plan is active. Let’s get started!`;
         } else {
           const expiryDate = member.plan_expiry_date
             ? new Date(member.plan_expiry_date).toLocaleDateString()
             : 'soon';
-          message = `Hi ${member.name}, your ${member.plan} at ${gymName} expires on ${expiryDate}. Please renew soon to continue.`;
+          message = `Hi ${member.name} (ID: ${member.id}), your ${member.plan} at ${gymName} expires on ${expiryDate}. Please renew soon.`;
         }
 
         if (message.length > 150 && Deno.env.get('TWILIO_ACCOUNT_SID')?.startsWith('AC')) {
