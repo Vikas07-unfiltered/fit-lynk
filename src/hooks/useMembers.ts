@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -68,14 +67,22 @@ export const useMembers = () => {
         last_payment: newMemberData.first_payment_date || new Date().toISOString().split('T')[0]
       };
 
+      console.log('Inserting member data:', insertData);
+
       const { data, error } = await supabase
         .from('members')
         .insert(insertData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
 
+      console.log('Member inserted successfully:', data);
+
+      // Update local state immediately
       setMembers([data as Member, ...members]);
       
       toast({
@@ -83,7 +90,8 @@ export const useMembers = () => {
         description: `Member added successfully with ID: ${data.user_id}`,
       });
       
-      return true;
+      // Return the new member data for SMS sending
+      return data;
     } catch (error) {
       console.error('Error adding member:', error);
       toast({

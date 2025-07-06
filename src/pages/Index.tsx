@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -10,6 +9,7 @@ import Reports from '@/components/Reports';
 import TrainerManagement from '@/components/TrainerManagement';
 import GymHeader from '@/components/GymHeader';
 import DashboardOverview from '@/components/DashboardOverview';
+import TestSmsButton from '@/components/TestSmsButton';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -76,7 +76,11 @@ const Index = () => {
           {renderMobileTabsList()}
 
           <TabsContent value="overview" className="mt-4">
-            <DashboardOverview />
+            <div className="space-y-6">
+              <DashboardOverview />
+              {/* Add SMS Test Button for debugging */}
+              <TestSmsButton />
+            </div>
           </TabsContent>
 
           <TabsContent value="members" className="mt-4">

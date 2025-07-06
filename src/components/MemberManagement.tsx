@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { User } from 'lucide-react';
@@ -8,11 +7,39 @@ import MemberCard from './member/MemberCard';
 import AddMemberDialog from './member/AddMemberDialog';
 import MemberSearch from './member/MemberSearch';
 import QRCodeGenerator from './QRCodeGenerator';
+import { useSmsNotifications } from '@/hooks/useSmsNotifications';
 
 const MemberManagement = () => {
   const { members, loading, addMember } = useMembers();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const { sendWelcomeSms } = useSmsNotifications();
+
+  const handleAddMember = async (memberData: any) => {
+    console.log('Adding member with data:', memberData);
+    
+    const success = await addMember(memberData);
+    
+    if (success) {
+      console.log('Member added successfully, attempting to send welcome SMS...');
+      
+      // Get the newly added member (should be first in the list after adding)
+      setTimeout(async () => {
+        try {
+          // Find the most recently added member
+          const newestMember = members[0];
+          if (newestMember) {
+            console.log('Sending welcome SMS to newest member:', newestMember.id);
+            await sendWelcomeSms(newestMember.id);
+          }
+        } catch (error) {
+          console.error('Failed to send welcome SMS:', error);
+        }
+      }, 2000);
+    }
+    
+    return success;
+  };
 
   const filteredMembers = members.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -32,7 +59,7 @@ const MemberManagement = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         <MemberSearch searchTerm={searchTerm} onSearchChange={setSearchTerm} />
-        <AddMemberDialog onAddMember={addMember} />
+        <AddMemberDialog onAddMember={handleAddMember} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
