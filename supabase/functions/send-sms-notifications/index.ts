@@ -23,8 +23,8 @@ serve(async (req) => {
     const memberId = requestBody.member_id;
     const daysBeforeExpiry = requestBody.days_before || 5;
 
-    if (!notificationType) {
-      return new Response(JSON.stringify({ error: 'Missing notification type' }), {
+    if (!notificationType || !memberId) {
+      return new Response(JSON.stringify({ error: 'Missing notification type or member ID' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
@@ -80,11 +80,6 @@ serve(async (req) => {
         plan_expiry_date: m.expiry_date,
         join_date: ''
       }));
-    } else {
-      return new Response(JSON.stringify({ error: 'Invalid notification type or missing member ID' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
     }
 
     if (members.length === 0) {
