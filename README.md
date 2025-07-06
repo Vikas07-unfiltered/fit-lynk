@@ -1,73 +1,141 @@
-# Welcome to your Lovable project
+# Fit-Lynk Gym Management System
 
-## Project info
+A comprehensive gym management application built with React, TypeScript, and Supabase.
 
-**URL**: https://lovable.dev/projects/ba11fafa-9d01-46a9-a3a8-a5a872832141
+## Features
 
-## How can I edit this code?
+- **Member Management** - Add, track, and manage gym members with auto-generated IDs
+- **Attendance Tracking** - QR code-based check-in/check-out system
+- **Payment Management** - Track payments and billing
+- **Analytics & Reports** - Comprehensive insights and performance tracking
+- **Trainer Management** - Manage gym staff and schedules
+- **SMS Notifications** - Automated welcome and expiry reminders via Twilio
+- **Mobile App** - Android app with Capacitor integration
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Frontend**: React + TypeScript + Vite
+- **UI**: Tailwind CSS + shadcn/ui components
+- **Backend**: Supabase (PostgreSQL + Auth + Edge Functions)
+- **Mobile**: Capacitor for Android
+- **SMS**: Twilio integration
+- **Charts**: Recharts for analytics
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ba11fafa-9d01-46a9-a3a8-a5a872832141) and start prompting.
+## Setup Instructions
 
-Changes made via Lovable will be committed automatically to this repo.
+### 1. Environment Variables
 
-**Use your preferred IDE**
+Create a `.env` file in the root directory with the following variables:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```env
+# Supabase Configuration (automatically configured)
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Twilio Configuration (for SMS notifications)
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=your_twilio_phone_number
 ```
 
-**Edit a file directly in GitHub**
+### 2. Supabase Setup
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The database schema is automatically created via migrations. Key tables include:
+- `gyms` - Gym information
+- `gym_owners` - Gym owner authentication
+- `members` - Gym members with auto-generated IDs
+- `membership_plans` - Subscription plans
+- `payments` - Payment records
+- `attendance` - Check-in/check-out records
 
-**Use GitHub Codespaces**
+### 3. SMS Configuration
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+To enable SMS notifications:
 
-## What technologies are used for this project?
+1. **Create a Twilio Account**:
+   - Sign up at [Twilio](https://www.twilio.com/)
+   - Get your Account SID, Auth Token, and Phone Number
 
-This project is built with:
+2. **Configure Environment Variables**:
+   - Add your Twilio credentials to the Supabase Edge Function environment
+   - Set the variables in your Supabase dashboard under Settings > Edge Functions
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+3. **Test SMS Functionality**:
+   - Add a new member to test welcome SMS
+   - Use the bulk SMS feature to test expiry reminders
 
-## How can I deploy this project?
+### 4. Development
 
-Simply open [Lovable](https://lovable.dev/projects/ba11fafa-9d01-46a9-a3a8-a5a872832141) and click on Share -> Publish.
+```bash
+# Install dependencies
+npm install
 
-## Can I connect a custom domain to my Lovable project?
+# Start development server
+npm run dev
 
-Yes, you can!
+# Build for production
+npm run build
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### 5. Android App
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+```bash
+# Build and open in Android Studio
+npm run android
+
+# Build development version
+npm run android:dev
+
+# Sync web assets to Android
+npm run cap:sync
+```
+
+## SMS Notifications
+
+The system supports automated SMS notifications:
+
+### Welcome SMS
+- Automatically sent when a new member is added
+- Can be disabled in SMS settings
+
+### Expiry Reminders
+- Sent to members whose plans expire in 5 days (configurable)
+- Can be sent manually or automatically
+- Tracks notification status to avoid duplicates
+
+### Configuration
+- Access SMS settings through the Settings page
+- Configure notification timing and content
+- Monitor SMS delivery status
+
+## Database Functions
+
+Key database functions:
+- `generate_gym_member_id()` - Auto-generates unique member IDs per gym
+- `get_expiring_members()` - Finds members with expiring plans
+- `mark_notification_sent()` - Tracks SMS notification status
+
+## Security
+
+- Row Level Security (RLS) enabled on all tables
+- Gym owners can only access their own gym data
+- Authentication handled by Supabase Auth
+- SMS credentials secured in environment variables
+
+## Deployment
+
+The app can be deployed to:
+- **Web**: Netlify (configured in `netlify.toml`)
+- **Mobile**: Android APK generation via Capacitor
+
+## Support
+
+For issues or questions:
+1. Check the console logs for detailed error messages
+2. Verify Twilio credentials are correctly configured
+3. Ensure Supabase connection is working
+4. Check that all required environment variables are set
+
+## License
+
+This project is proprietary software for gym management.

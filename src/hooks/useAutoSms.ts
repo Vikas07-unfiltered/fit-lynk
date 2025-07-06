@@ -10,6 +10,8 @@ export const useAutoSms = () => {
   useEffect(() => {
     if (!gym?.id) return;
 
+    console.log('Setting up SMS auto-notifications for gym:', gym.id);
+
     // Set up real-time subscription for new members
     const memberSubscription = supabase
       .channel('member-changes')
@@ -27,18 +29,24 @@ export const useAutoSms = () => {
           // Send welcome SMS automatically
           if (payload.new && payload.new.id) {
             try {
-              await sendWelcomeSms(payload.new.id);
-              console.log('Welcome SMS sent for new member:', payload.new.name);
+              // Add a small delay to ensure the member is fully created
+              setTimeout(async () => {
+                await sendWelcomeSms(payload.new.id);
+                console.log('Welcome SMS sent for new member:', payload.new.name);
+              }, 2000);
             } catch (error) {
               console.error('Failed to send welcome SMS:', error);
             }
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Member subscription status:', status);
+      });
 
     // Cleanup subscription on unmount
     return () => {
+      console.log('Cleaning up SMS subscriptions');
       supabase.removeChannel(memberSubscription);
     };
   }, [gym?.id, sendWelcomeSms]);

@@ -4,6 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 interface Member {
@@ -22,16 +23,19 @@ interface Gym {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
+    // Parse request body
     const requestBody = await req.json().catch(() => ({}))
     const notificationType = requestBody.type // 'welcome' or 'expiry' or 'expiry_bulk'
     const memberId = requestBody.member_id
@@ -39,15 +43,27 @@ serve(async (req) => {
 
     console.log('SMS Notification request:', { notificationType, memberId, daysBeforeExpiry })
 
+    // Validate required parameters
+    if (!notificationType) {
+      return new Response(
+        JSON.stringify({ error: 'Missing notification type' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     // Get Twilio credentials from environment
     const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID')
     const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN')
     const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER')
 
     if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
-      console.error('Twilio credentials not found')
+      console.error('Twilio credentials missing:', {
+        hasSid: !!twilioAccountSid,
+        hasToken: !!twilioAuthToken,
+        hasPhone: !!twilioPhoneNumber
+      })
       return new Response(
-        JSON.stringify({ error: 'Twilio credentials not configured' }),
+        JSON.stringify({ error: 'SMS service not configured. Please contact administrator.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -55,18 +71,20 @@ serve(async (req) => {
     let members: Member[] = []
     let gyms: { [key: string]: Gym } = {}
 
+    // Fetch members based on notification type
     if (notificationType === 'welcome' && memberId) {
       // Get specific member for welcome message
       const { data: member, error: memberError } = await supabaseClient
         .from('members')
         .select('*')
         .eq('id', memberId)
+        .eq('status', 'active')
         .single()
 
       if (memberError || !member) {
         console.error('Error fetching member:', memberError)
         return new Response(
-          JSON.stringify({ error: 'Member not found' }),
+          JSON.stringify({ error: 'Member not found or inactive' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -78,12 +96,13 @@ serve(async (req) => {
         .from('members')
         .select('*')
         .eq('id', memberId)
+        .eq('status', 'active')
         .single()
 
       if (memberError || !member) {
         console.error('Error fetching member:', memberError)
         return new Response(
-          JSON.stringify({ error: 'Member not found' }),
+          JSON.stringify({ error: 'Member not found or inactive' }),
           { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -112,6 +131,11 @@ serve(async (req) => {
         plan_expiry_date: m.expiry_date,
         join_date: ''
       }))
+    } else {
+      return new Response(
+        JSON.stringify({ error: 'Invalid notification type or missing member ID' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     if (members.length === 0) {
@@ -139,19 +163,37 @@ serve(async (req) => {
 
     let successCount = 0
     let errorCount = 0
+    const errors: string[] = []
 
     // Send SMS to each member
     for (const member of members) {
       try {
         const gymName = gyms[member.gym_id]?.name || 'Your Gym'
         
-        // Format phone number for Twilio (ensure it has country code)
+        // Format phone number for Twilio
         let phoneNumber = member.phone.replace(/\D/g, '')
-        if (!phoneNumber.startsWith('1') && phoneNumber.length === 10) {
-          phoneNumber = '1' + phoneNumber // Add US country code
-        }
-        if (!phoneNumber.startsWith('+')) {
+        
+        // Handle different phone number formats
+        if (phoneNumber.startsWith('91') && phoneNumber.length === 12) {
+          // Indian number with country code
           phoneNumber = '+' + phoneNumber
+        } else if (phoneNumber.length === 10) {
+          // Assume Indian number without country code
+          phoneNumber = '+91' + phoneNumber
+        } else if (phoneNumber.startsWith('1') && phoneNumber.length === 11) {
+          // US number with country code
+          phoneNumber = '+' + phoneNumber
+        } else if (!phoneNumber.startsWith('+')) {
+          // Add + if missing
+          phoneNumber = '+' + phoneNumber
+        }
+
+        // Validate phone number format
+        if (phoneNumber.length < 10) {
+          console.error(`Invalid phone number for ${member.name}: ${member.phone}`)
+          errors.push(`Invalid phone number for ${member.name}`)
+          errorCount++
+          continue
         }
 
         // Prepare message based on notification type
@@ -162,7 +204,7 @@ serve(async (req) => {
             `We're excited to help you achieve your fitness goals. If you have any questions, feel free to contact us.\n\n` +
             `Let's get started on your fitness journey! 💪`
         } else {
-          const expiryDate = new Date(member.plan_expiry_date).toLocaleDateString()
+          const expiryDate = member.plan_expiry_date ? new Date(member.plan_expiry_date).toLocaleDateString() : 'soon'
           message = `🏋️ Hi ${member.name}!\n\n` +
             `Your ${member.plan} membership at ${gymName} expires on ${expiryDate}.\n\n` +
             `To continue enjoying our services, please renew your membership soon.\n\n` +
@@ -187,8 +229,10 @@ serve(async (req) => {
           })
         })
 
+        const responseData = await twilioResponse.text()
+
         if (twilioResponse.ok) {
-          // Mark notification as sent for expiry notifications
+          // Mark notification as sent for expiry notifications (but not welcome)
           if (notificationType.includes('expiry')) {
             await supabaseClient.rpc('mark_notification_sent', { 
               member_id: member.id 
@@ -198,8 +242,8 @@ serve(async (req) => {
           successCount++
           console.log(`✅ SMS sent to ${member.name} (${phoneNumber})`)
         } else {
-          const errorData = await twilioResponse.text()
-          console.error(`❌ Failed to send SMS to ${member.name}: ${errorData}`)
+          console.error(`❌ Failed to send SMS to ${member.name}: ${responseData}`)
+          errors.push(`Failed to send to ${member.name}: ${responseData}`)
           errorCount++
         }
 
@@ -208,6 +252,7 @@ serve(async (req) => {
 
       } catch (error) {
         console.error(`❌ Error processing member ${member.name}:`, error)
+        errors.push(`Error processing ${member.name}: ${error.message}`)
         errorCount++
       }
     }
@@ -220,7 +265,8 @@ serve(async (req) => {
         type: notificationType,
         total_members: members.length,
         successful_notifications: successCount,
-        failed_notifications: errorCount
+        failed_notifications: errorCount,
+        errors: errors.length > 0 ? errors : undefined
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
@@ -228,7 +274,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('❌ Unexpected error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error.message 
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }

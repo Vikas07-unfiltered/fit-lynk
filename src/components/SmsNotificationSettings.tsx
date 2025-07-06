@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Send, Settings, Clock } from 'lucide-react';
+import { MessageSquare, Send, Settings, Clock, AlertCircle } from 'lucide-react';
 import { useSmsNotifications } from '@/hooks/useSmsNotifications';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const SmsNotificationSettings = () => {
   const [autoWelcomeSms, setAutoWelcomeSms] = useState(true);
@@ -19,12 +20,23 @@ const SmsNotificationSettings = () => {
 
   const handleSendBulkExpiry = async () => {
     setSending(true);
-    await sendBulkExpirySms(expiryDays);
-    setSending(false);
+    try {
+      await sendBulkExpirySms(expiryDays);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Configuration Alert */}
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          SMS notifications require Twilio configuration. Make sure your Twilio credentials are properly set up in the environment variables.
+        </AlertDescription>
+      </Alert>
+
       {/* SMS Settings Card */}
       <Card>
         <CardHeader className={isMobile ? 'px-4 pt-4 pb-3' : ''}>
@@ -137,14 +149,14 @@ const SmsNotificationSettings = () => {
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               <span className={`${isMobile ? 'text-sm' : ''}`}>Twilio Integration</span>
               <Badge variant="outline" className="bg-green-50 text-green-700">
-                Configured
+                Ready
               </Badge>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
               <span className={`${isMobile ? 'text-sm' : ''}`}>Auto Notifications</span>
               <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                Active
+                {autoWelcomeSms || autoExpirySms ? 'Active' : 'Inactive'}
               </Badge>
             </div>
           </div>
