@@ -58,6 +58,14 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
+
+      const { data: memberIdMap } = await supabaseClient
+        .from('member_ids')
+        .select('uuid, user_id')
+        .eq('uuid', member.id)
+        .single();
+
+      member.custom_id = memberIdMap?.user_id || member.id;
       members = [member];
     } else if (notificationType === 'expiry_bulk') {
       const { data: expiringMembers, error: membersError } = await supabaseClient.rpc('get_expiring_members', {
@@ -71,8 +79,18 @@ serve(async (req) => {
         });
       }
 
+      const uuids = expiringMembers.map(m => m.member_id);
+      const { data: idMappings } = await supabaseClient
+        .from('member_ids')
+        .select('uuid, user_id')
+        .in('uuid', uuids);
+
+      const idMap = {};
+      idMappings?.forEach(m => { idMap[m.uuid] = m.user_id; });
+
       members = (expiringMembers || []).map((m) => ({
         id: m.member_id,
+        custom_id: idMap[m.member_id] || m.member_id,
         name: m.member_name,
         phone: m.member_phone,
         gym_id: m.gym_id,
@@ -124,12 +142,12 @@ serve(async (req) => {
 
         let message;
         if (notificationType === 'welcome') {
-          message = `Welcome to ${gymName}, ${member.name} (ID: ${member.id})! Your ${member.plan} plan is active. Let’s get started!`;
+          message = `Welcome to ${gymName}, ${member.name} (ID: ${member.custom_id})! Your ${member.plan} plan is active. Let’s get started!`;
         } else {
           const expiryDate = member.plan_expiry_date
             ? new Date(member.plan_expiry_date).toLocaleDateString()
             : 'soon';
-          message = `Hi ${member.name} (ID: ${member.id}), your ${member.plan} at ${gymName} expires on ${expiryDate}. Please renew soon.`;
+          message = `Hi ${member.name} (ID: ${member.custom_id}), your ${member.plan} at ${gymName} expires on ${expiryDate}. Please renew soon.`;
         }
 
         if (message.length > 150 && Deno.env.get('TWILIO_ACCOUNT_SID')?.startsWith('AC')) {
