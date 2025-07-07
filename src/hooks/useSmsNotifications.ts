@@ -4,7 +4,21 @@ import { toast } from '@/hooks/use-toast';
 export const useSmsNotifications = () => {
   const sendWelcomeSms = async (memberId: string) => {
     try {
-      console.log('Sending welcome SMS for member:', memberId);
+      console.log('Sending welcome SMS for member ID:', memberId);
+      
+      // First, verify the member exists and get their details
+      const { data: member, error: memberError } = await supabase
+        .from('members')
+        .select('id, name, phone, gym_id')
+        .eq('id', memberId)
+        .single();
+
+      if (memberError || !member) {
+        console.error('Member not found:', memberError);
+        throw new Error('Member not found');
+      }
+
+      console.log('Found member for SMS:', member);
       
       const { data, error } = await supabase.functions.invoke('send-sms-notifications', {
         body: {
@@ -22,7 +36,7 @@ export const useSmsNotifications = () => {
 
       toast({
         title: "Welcome SMS Sent",
-        description: `Welcome message sent successfully!`,
+        description: `Welcome message sent to ${member.name}!`,
       });
 
       return { success: true, data };

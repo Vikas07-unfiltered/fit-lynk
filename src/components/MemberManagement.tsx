@@ -18,27 +18,23 @@ const MemberManagement = () => {
   const handleAddMember = async (memberData: any) => {
     console.log('Adding member with data:', memberData);
     
-    const success = await addMember(memberData);
+    const newMember = await addMember(memberData);
     
-    if (success) {
-      console.log('Member added successfully, attempting to send welcome SMS...');
+    if (newMember && newMember.id) {
+      console.log('Member added successfully, sending welcome SMS to member ID:', newMember.id);
       
-      // Get the newly added member (should be first in the list after adding)
-      setTimeout(async () => {
-        try {
-          // Find the most recently added member
-          const newestMember = members[0];
-          if (newestMember) {
-            console.log('Sending welcome SMS to newest member:', newestMember.id);
-            await sendWelcomeSms(newestMember.id);
-          }
-        } catch (error) {
-          console.error('Failed to send welcome SMS:', error);
-        }
-      }, 2000);
+      // Send welcome SMS immediately after successful member creation
+      try {
+        await sendWelcomeSms(newMember.id);
+        console.log('Welcome SMS sent successfully for member:', newMember.name);
+      } catch (error) {
+        console.error('Failed to send welcome SMS:', error);
+      }
+      
+      return true;
     }
     
-    return success;
+    return false;
   };
 
   const filteredMembers = members.filter(member =>
