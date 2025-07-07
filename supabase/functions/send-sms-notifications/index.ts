@@ -45,27 +45,23 @@ serve(async (req) => {
     let gyms = {};
 
     if ((notificationType === 'welcome' || notificationType === 'expiry') && memberId) {
+      // Get member details including the user_id (formatted member ID)
       const { data: member, error: memberError } = await supabaseClient
         .from('members')
-        .select('*')
+        .select('id, user_id, name, phone, gym_id, plan, plan_expiry_date, join_date, status')
         .eq('id', memberId)
         .eq('status', 'active')
         .single();
 
       if (memberError || !member) {
+        console.error('Member not found:', memberError);
         return new Response(JSON.stringify({ error: 'Member not found or inactive' }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      const { data: memberIdMap } = await supabaseClient
-        .from('member_ids')
-        .select('uuid, user_id')
-        .eq('uuid', member.id)
-        .single();
-
-      member.custom_id = memberIdMap?.user_id || member.id;
+      console.log('Found member:', member);
       members = [member];
     } else if (notificationType === 'expiry_bulk') {
       const { data: expiringMembers, error: membersError } = await supabaseClient.rpc('get_expiring_members', {
@@ -73,31 +69,32 @@ serve(async (req) => {
       });
 
       if (membersError) {
+        console.error('Error fetching expiring members:', membersError);
         return new Response(JSON.stringify({ error: 'Failed to fetch expiring members' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      const uuids = expiringMembers.map(m => m.member_id);
-      const { data: idMappings } = await supabaseClient
-        .from('member_ids')
-        .select('uuid, user_id')
-        .in('uuid', uuids);
+      // For bulk expiry, we need to get the full member details including user_id
+      if (expiringMembers && expiringMembers.length > 0) {
+        const memberIds = expiringMembers.map(m => m.member_id);
+        const { data: fullMembers, error: fullMembersError } = await supabaseClient
+          .from('members')
+          .select('id, user_id, name, phone, gym_id, plan, plan_expiry_date')
+          .in('id', memberIds)
+          .eq('status', 'active');
 
-      const idMap = {};
-      idMappings?.forEach(m => { idMap[m.uuid] = m.user_id; });
+        if (fullMembersError) {
+          console.error('Error fetching full member details:', fullMembersError);
+          return new Response(JSON.stringify({ error: 'Failed to fetch member details' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
 
-      members = (expiringMembers || []).map((m) => ({
-        id: m.member_id,
-        custom_id: idMap[m.member_id] || m.member_id,
-        name: m.member_name,
-        phone: m.member_phone,
-        gym_id: m.gym_id,
-        plan: m.plan_name,
-        plan_expiry_date: m.expiry_date,
-        join_date: ''
-      }));
+        members = fullMembers || [];
+      }
     }
 
     if (members.length === 0) {
@@ -107,6 +104,7 @@ serve(async (req) => {
       });
     }
 
+    // Get gym details
     const uniqueGymIds = [...new Set(members.map((m) => m.gym_id))];
     const { data: gymData } = await supabaseClient.from('gyms').select('id, name').in('id', uniqueGymIds);
     if (gymData) {
@@ -123,6 +121,7 @@ serve(async (req) => {
       try {
         const gymName = gyms[member.gym_id]?.name || 'Your Gym';
 
+        // Format phone number
         let phoneNumber = member.phone.replace(/\D/g, '');
         if (phoneNumber.startsWith('91') && phoneNumber.length === 12) {
           phoneNumber = '+' + phoneNumber;
@@ -140,16 +139,20 @@ serve(async (req) => {
           continue;
         }
 
+        // Create message using user_id (formatted member ID) instead of internal id
         let message;
         if (notificationType === 'welcome') {
-          message = `Welcome to ${gymName}, ${member.name} (ID: ${member.custom_id})! Your ${member.plan} plan is active. Let’s get started!`;
+          message = `Welcome to ${gymName}, ${member.name} (ID: ${member.user_id})! Your ${member.plan} plan is active. Let's get started!`;
         } else {
           const expiryDate = member.plan_expiry_date
             ? new Date(member.plan_expiry_date).toLocaleDateString()
             : 'soon';
-          message = `Hi ${member.name} (ID: ${member.custom_id}), your ${member.plan} at ${gymName} expires on ${expiryDate}. Please renew soon.`;
+          message = `Hi ${member.name} (ID: ${member.user_id}), your ${member.plan} at ${gymName} expires on ${expiryDate}. Please renew soon.`;
         }
 
+        console.log('Sending SMS message:', message);
+
+        // Truncate message if too long for trial accounts
         if (message.length > 150 && Deno.env.get('TWILIO_ACCOUNT_SID')?.startsWith('AC')) {
           message = message.slice(0, 150);
         }
@@ -171,18 +174,25 @@ serve(async (req) => {
         });
 
         const responseData = await twilioResponse.text();
+        console.log('Twilio response:', responseData);
+
         if (twilioResponse.ok) {
+          // Mark notification as sent for expiry notifications
           if (notificationType.includes('expiry')) {
             await supabaseClient.rpc('mark_notification_sent', { member_id: member.id });
           }
           successCount++;
+          console.log(`✅ SMS sent successfully to ${member.name} (${member.user_id})`);
         } else {
+          console.error(`❌ Failed to send SMS to ${member.name}:`, responseData);
           errors.push(`Failed to send to ${member.name}: ${responseData}`);
           errorCount++;
         }
 
+        // Add delay to avoid rate limiting
         await new Promise((resolve) => setTimeout(resolve, 1000));
       } catch (error) {
+        console.error(`❌ Error processing ${member.name}:`, error);
         errors.push(`Error processing ${member.name}: ${error.message}`);
         errorCount++;
       }
@@ -201,6 +211,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    console.error('❌ Unexpected error:', error);
     return new Response(JSON.stringify({
       error: 'Internal server error',
       details: error.message
