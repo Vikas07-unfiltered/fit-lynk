@@ -45,8 +45,6 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
     }
   };
 
-  const selectedPlan = plans.find(plan => plan.id === newMember.plan);
-
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
@@ -147,28 +145,28 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
                   <div className="p-2 text-sm text-gray-500">No plans available. Please create a plan first.</div>
                 ) : (
                   plans.map((plan) => (
-                    <SelectItem key={plan.id} value={plan.id}>
+                    <SelectItem key={plan.id} value={plan.name}>
                       {plan.name} - ₹{plan.price.toLocaleString()}/{plan.duration_months} month{plan.duration_months > 1 ? 's' : ''}
                     </SelectItem>
                   ))
                 )}
               </SelectContent>
             </Select>
-            {selectedPlan && (
+            {plans.find(p => p.name === newMember.plan) && (
               <div className="mt-2 p-3 bg-emerald-50 rounded border text-sm">
                 <div className="font-medium text-emerald-800">Plan Details:</div>
                 <div className="text-emerald-700">
-                  Duration: {selectedPlan.duration_months} month{selectedPlan.duration_months > 1 ? 's' : ''}
+                  Duration: {plans.find(p => p.name === newMember.plan)?.duration_months} month{plans.find(p => p.name === newMember.plan)?.duration_months > 1 ? 's' : ''}
                 </div>
                 <div className="text-emerald-700">
-                  Total Cost: ₹{selectedPlan.price.toLocaleString()}
+                  Total Cost: ₹{plans.find(p => p.name === newMember.plan)?.price.toLocaleString()}
                 </div>
                 <div className="text-emerald-700">
-                  Per Month: ₹{Math.round(selectedPlan.price / selectedPlan.duration_months).toLocaleString()}
+                  Per Month: ₹{Math.round((plans.find(p => p.name === newMember.plan)?.price || 0) / (plans.find(p => p.name === newMember.plan)?.duration_months || 1)).toLocaleString()}
                 </div>
-                {selectedPlan.description && (
+                {plans.find(p => p.name === newMember.plan)?.description && (
                   <div className="text-emerald-700 mt-1">
-                    {selectedPlan.description}
+                    {plans.find(p => p.name === newMember.plan)?.description}
                   </div>
                 )}
               </div>
