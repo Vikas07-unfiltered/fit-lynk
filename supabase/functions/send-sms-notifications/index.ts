@@ -142,12 +142,12 @@ serve(async (req) => {
         // Create message using user_id (formatted member ID) instead of internal id
         let message;
         if (notificationType === 'welcome') {
-          message = `Welcome to ${gymName}, ${member.name} (ID: ${member.user_id})! Your ${member.plan} plan is active. Let's get started!`;
+          message = `Welcome to ${gymName}, ${member.name}! Your ${member.plan} membership is now active (ID: ${member.user_id}). Let's get started! 💪`;
         } else {
           const expiryDate = member.plan_expiry_date
             ? new Date(member.plan_expiry_date).toLocaleDateString()
             : 'soon';
-          message = `Hi ${member.name} (ID: ${member.user_id}), your ${member.plan} at ${gymName} expires on ${expiryDate}. Please renew soon.`;
+          message = `Hi ${member.name}! Your ${member.plan} membership at ${gymName} expires on ${expiryDate}. Please renew soon to continue enjoying our services. (ID: ${member.user_id})`;
         }
 
         console.log('Sending SMS message:', message);
