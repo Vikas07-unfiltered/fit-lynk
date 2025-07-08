@@ -21,10 +21,12 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [joinDate, setJoinDate] = useState<Date>();
   const [firstPaymentDate, setFirstPaymentDate] = useState<Date>();
+  const [expiryDate, setExpiryDate] = useState<Date>();
   const [newMember, setNewMember] = useState<NewMember>({
     name: '',
     phone: '',
     plan: '',
+    expiry_date: undefined as any, // Add expiry_date to NewMember type if not present
   });
 
   const { plans, loading: plansLoading } = useMembershipPlans();
@@ -34,6 +36,7 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
       ...newMember,
       join_date: joinDate ? format(joinDate, 'yyyy-MM-dd') : undefined,
       first_payment_date: firstPaymentDate ? format(firstPaymentDate, 'yyyy-MM-dd') : undefined,
+      expiry_date: expiryDate ? format(expiryDate, 'yyyy-MM-dd') : undefined,
     };
 
     const success = await onAddMember(memberData);
@@ -41,6 +44,7 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
       setNewMember({ name: '', phone: '', plan: '' });
       setJoinDate(undefined);
       setFirstPaymentDate(undefined);
+      setExpiryDate(undefined);
       setIsOpen(false);
     }
   };
@@ -132,6 +136,32 @@ const AddMemberDialog = ({ onAddMember }: AddMemberDialogProps) => {
             </Popover>
           </div>
 
+          <div>
+            <Label htmlFor="expiry-date">Membership Expiry Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !expiryDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {expiryDate ? format(expiryDate, "PPP") : <span>Select expiry date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={expiryDate}
+                  onSelect={setExpiryDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
           <div>
             <Label htmlFor="plan">Membership Plan *</Label>
             <Select onValueChange={(value) => setNewMember({ ...newMember, plan: value })}>

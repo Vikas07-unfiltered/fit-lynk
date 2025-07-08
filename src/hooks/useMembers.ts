@@ -103,6 +103,56 @@ export const useMembers = () => {
     }
   };
 
+  const deleteMember = async (memberId: string) => {
+    try {
+      const { error } = await supabase
+        .from('members')
+        .delete()
+        .eq('id', memberId);
+      if (error) throw error;
+      setMembers(members.filter((m) => m.id !== memberId));
+      toast({
+        title: 'Deleted',
+        description: 'Member deleted successfully',
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete member',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
+  const updateMember = async (memberId: string, updatedFields: Partial<Member>) => {
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .update(updatedFields)
+        .eq('id', memberId)
+        .select()
+        .single();
+      if (error) throw error;
+      setMembers(members.map((m) => (m.id === memberId ? { ...m, ...updatedFields } : m)));
+      toast({
+        title: 'Updated',
+        description: 'Member updated successfully',
+      });
+      return data;
+    } catch (error) {
+      console.error('Error updating member:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update member',
+        variant: 'destructive',
+      });
+      return false;
+    }
+  };
+
   useEffect(() => {
     fetchMembers();
   }, [gym?.id]);
@@ -112,5 +162,7 @@ export const useMembers = () => {
     loading,
     addMember,
     fetchMembers,
+    deleteMember,
+    updateMember,
   };
 };

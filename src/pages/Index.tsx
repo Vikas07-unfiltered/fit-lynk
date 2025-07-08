@@ -78,8 +78,7 @@ const Index = () => {
           <TabsContent value="overview" className="mt-4">
             <div className="space-y-6">
               <DashboardOverview />
-              {/* Add SMS Test Button for debugging */}
-              <TestSmsButton />
+
             </div>
           </TabsContent>
 

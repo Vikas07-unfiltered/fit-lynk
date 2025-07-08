@@ -17,4 +17,5 @@ export interface NewMember {
   plan: string;
   join_date?: string;
   first_payment_date?: string;
+  expiry_date?: string;
 }

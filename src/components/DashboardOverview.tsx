@@ -4,7 +4,6 @@ import { Users, TrendingUp, TrendingDown, Activity, BarChart, AlertTriangle } fr
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
 import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 import { useIsMobile } from '@/hooks/use-mobile';
-import ExpiryNotifications from '@/components/ExpiryNotifications';
 
 const DashboardOverview = () => {
   const { analytics, loading } = useDashboardAnalytics();
@@ -199,7 +198,7 @@ const DashboardOverview = () => {
       </div>
 
       {/* Expiry Notifications */}
-      <ExpiryNotifications />
+      
     </div>
   );
 };

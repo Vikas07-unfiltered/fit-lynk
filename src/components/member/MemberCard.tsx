@@ -2,12 +2,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Calendar, Bell } from 'lucide-react';
+import { User, Calendar, Bell, Pencil, Trash } from 'lucide-react';
 import { Member } from '@/types/member';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useMembers } from '@/hooks/useMembers';
 
 interface MemberCardProps {
   member: Member;
@@ -15,6 +16,33 @@ interface MemberCardProps {
 }
 
 const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
+  const { deleteMember, updateMember } = useMembers();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFields, setEditFields] = useState({ name: member.name, phone: member.phone, plan: member.plan });
+  // Placeholder handlers for edit and delete
+  const handleEdit = () => {
+    setIsEditing(true);
+  };
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditFields({ ...editFields, [e.target.name]: e.target.value });
+  };
+
+  const handleEditSave = async () => {
+    await updateMember(member.id, editFields);
+    setIsEditing(false);
+  };
+
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditFields({ name: member.name, phone: member.phone, plan: member.plan });
+  };
+  const handleDelete = async () => {
+    if(window.confirm(`Are you sure you want to delete member: ${member.name}?`)) {
+      await deleteMember(member.id);
+    }
+  };
+
   const [isSendingNotification, setIsSendingNotification] = useState(false);
   const isMobile = useIsMobile();
 
@@ -96,22 +124,56 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
           <Button
             size={isMobile ? "sm" : "sm"}
             variant="outline"
-            onClick={() => onShowQR(member)}
-            className={`flex-1 ${isMobile ? 'h-9 text-xs' : ''}`}
+            onClick={handleEdit}
+            className={`border-blue-500 text-blue-600 hover:bg-blue-50 ${isMobile ? 'h-9 px-3' : 'px-3'}`}
           >
-            <Calendar className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} mr-1`} />
-            {isMobile ? 'QR' : 'QR Code'}
+            <Pencil className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
           </Button>
           <Button
             size={isMobile ? "sm" : "sm"}
             variant="outline"
-            onClick={sendIndividualNotification}
-            disabled={isSendingNotification}
-            className={`border-orange-500 text-orange-600 hover:bg-orange-50 ${isMobile ? 'h-9 px-3' : 'px-3'}`}
+            onClick={handleDelete}
+            className={`border-red-500 text-red-600 hover:bg-red-50 ${isMobile ? 'h-9 px-3' : 'px-3'}`}
           >
-            <Bell className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+            <Trash className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
           </Button>
         </div>
+
+        {/* Edit Dialog */}
+        {isEditing && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-auto shadow-lg">
+              <h3 className="text-lg font-semibold mb-4">Edit Member</h3>
+              <div className="space-y-3">
+                <input
+                  className="w-full border rounded px-3 py-2"
+                  name="name"
+                  value={editFields.name}
+                  onChange={handleEditChange}
+                  placeholder="Name"
+                />
+                <input
+                  className="w-full border rounded px-3 py-2"
+                  name="phone"
+                  value={editFields.phone}
+                  onChange={handleEditChange}
+                  placeholder="Phone"
+                />
+                <input
+                  className="w-full border rounded px-3 py-2"
+                  name="plan"
+                  value={editFields.plan}
+                  onChange={handleEditChange}
+                  placeholder="Plan"
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button onClick={handleEditCancel} className="px-4 py-2 rounded bg-gray-200">Cancel</button>
+                <button onClick={handleEditSave} className="px-4 py-2 rounded bg-blue-600 text-white">Save</button>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
