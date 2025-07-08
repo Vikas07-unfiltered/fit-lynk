@@ -72,7 +72,7 @@ export const usePayments = () => {
       
       toast({
         title: "Success",
-        description: "Payment recorded successfully",
+        description: "Payment recorded and membership updated successfully",
       });
       
       return true;

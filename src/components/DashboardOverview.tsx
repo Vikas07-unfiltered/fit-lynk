@@ -4,10 +4,12 @@ import { Users, TrendingUp, TrendingDown, Activity, BarChart, AlertTriangle } fr
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
 import { useMembershipPlans } from '@/hooks/useMembershipPlans';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useExpiredMembers } from '@/hooks/useExpiredMembers';
 
 const DashboardOverview = () => {
   const { analytics, loading } = useDashboardAnalytics();
   const { plans } = useMembershipPlans();
+  const { expiredMembers } = useExpiredMembers();
   const isMobile = useIsMobile();
 
   if (loading) {
@@ -198,7 +200,40 @@ const DashboardOverview = () => {
       </div>
 
       {/* Expiry Notifications */}
-      
+      {expiredMembers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="w-5 h-5" />
+              Expired Memberships
+              <Badge variant="destructive">{expiredMembers.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600 mb-3">
+              {expiredMembers.length} member{expiredMembers.length > 1 ? 's have' : ' has'} expired membership{expiredMembers.length > 1 ? 's' : ''}:
+            </p>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {expiredMembers.slice(0, 5).map((member) => (
+                <div key={member.member_id} className="flex items-center justify-between p-2 bg-red-50 rounded border border-red-200">
+                  <div>
+                    <span className="font-medium text-red-800">{member.member_name}</span>
+                    <span className="text-sm text-red-600 ml-2">({member.member_user_id})</span>
+                  </div>
+                  <Badge variant="outline" className="bg-red-100 text-red-700 text-xs">
+                    {member.days_expired} days ago
+                  </Badge>
+                </div>
+              ))}
+              {expiredMembers.length > 5 && (
+                <p className="text-xs text-gray-500 text-center">
+                  +{expiredMembers.length - 5} more expired memberships
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Calendar, CreditCard, Home, TrendingUp, UserCheck } from 'lucide-react';
+import { Users, Calendar, CreditCard, Home, TrendingUp, UserCheck, AlertTriangle } from 'lucide-react';
 import MemberManagement from '@/components/MemberManagement';
 import AttendanceTracker from '@/components/AttendanceTracker';
 import PaymentTracking from '@/components/PaymentTracking';
@@ -9,7 +9,7 @@ import Reports from '@/components/Reports';
 import TrainerManagement from '@/components/TrainerManagement';
 import GymHeader from '@/components/GymHeader';
 import DashboardOverview from '@/components/DashboardOverview';
-import TestSmsButton from '@/components/TestSmsButton';
+import ExpiredMembersReport from '@/components/ExpiredMembersReport';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
@@ -21,6 +21,7 @@ const Index = () => {
     { id: 'members', label: 'Members', icon: Users },
     { id: 'attendance', label: 'Attendance', icon: Calendar },
     { id: 'payments', label: 'Payments', icon: CreditCard },
+    { id: 'expired', label: 'Expired', icon: AlertTriangle },
     { id: 'reports', label: 'Reports', icon: TrendingUp },
     { id: 'trainers', label: 'Trainers', icon: UserCheck },
   ];
@@ -120,6 +121,20 @@ const Index = () => {
               </CardHeader>
               <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
                 <PaymentTracking />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="expired" className="mt-4">
+            <Card>
+              <CardHeader className={isMobile ? 'pb-3 px-4 pt-4' : ''}>
+                <CardTitle className={isMobile ? 'text-lg' : ''}>Expired Memberships</CardTitle>
+                <CardDescription className={isMobile ? 'text-sm' : ''}>
+                  {isMobile ? 'View and manage expired memberships' : 'View and manage members with expired memberships'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className={isMobile ? 'px-4 pb-4' : ''}>
+                <ExpiredMembersReport />
               </CardContent>
             </Card>
           </TabsContent>
