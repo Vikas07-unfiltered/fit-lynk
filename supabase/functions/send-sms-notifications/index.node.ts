@@ -142,28 +142,28 @@ serve(async (req: Request) => {
           let expiryDate = 'N/A';
           if (member.plan_expiry_date) {
             const d = new Date(member.plan_expiry_date);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = String(d.getFullYear()).slice(-2);
-            expiryDate = `${day}/${month}/${year}`;
+            const month = d.getMonth() + 1;
+            const day = d.getDate();
+            const year = d.getFullYear();
+            expiryDate = `${month}/${day}/${year}`;
           }
           message =
             `Fit Lynk: Welcome ${member.name}!\n` +
-            `ID: ${displayId}\n` +
+            `ID: ${member.user_id || displayId}\n` +
             `Plan: ${member.plan}\n` +
             `Expiry: ${expiryDate}`;
         } else {
           let expiryDate = 'N/A';
           if (member.plan_expiry_date) {
             const d = new Date(member.plan_expiry_date);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = String(d.getFullYear()).slice(-2);
-            expiryDate = `${day}/${month}/${year}`;
+            const month = d.getMonth() + 1;
+            const day = d.getDate();
+            const year = d.getFullYear();
+            expiryDate = `${month}/${day}/${year}`;
           }
           message =
             `Fit Lynk: Hi ${member.name}!\n` +
-            `ID: ${displayId}\n` +
+            `ID: ${member.user_id || displayId}\n` +
             `Plan: ${member.plan}\n` +
             `Expiry: ${expiryDate}`;
         }

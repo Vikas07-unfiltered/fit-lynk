@@ -142,12 +142,25 @@ serve(async (req) => {
         // Create message using user_id (formatted member ID) instead of internal id
         let message;
         if (notificationType === 'welcome') {
-          message = `Welcome to ${gymName}, ${member.name}! Your ${member.plan} membership is now active (ID: ${member.user_id}). Let's get started! 💪`;
+          let expiryDate = 'N/A';
+          if (member.plan_expiry_date) {
+            const d = new Date(member.plan_expiry_date);
+            const month = d.getMonth() + 1;
+            const day = d.getDate();
+            const year = d.getFullYear();
+            expiryDate = `${month}/${day}/${year}`;
+          }
+          message = `Fit Lynk: Welcome ${member.name}!\nID: ${member.user_id}\nPlan: ${member.plan}\nExpiry: ${expiryDate}`;
         } else {
-          const expiryDate = member.plan_expiry_date
-            ? new Date(member.plan_expiry_date).toLocaleDateString()
-            : 'soon';
-          message = `Hi ${member.name}! Your ${member.plan} membership at ${gymName} expires on ${expiryDate}. Please renew soon to continue enjoying our services. (ID: ${member.user_id})`;
+          let expiryDate = 'N/A';
+          if (member.plan_expiry_date) {
+            const d = new Date(member.plan_expiry_date);
+            const month = d.getMonth() + 1;
+            const day = d.getDate();
+            const year = d.getFullYear();
+            expiryDate = `${month}/${day}/${year}`;
+          }
+          message = `Fit Lynk: Hi ${member.name}!\nID: ${member.user_id}\nPlan: ${member.plan}\nExpiry: ${expiryDate}`;
         }
 
         console.log('Sending SMS message:', message);
