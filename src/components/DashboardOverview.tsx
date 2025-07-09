@@ -1,5 +1,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Users, TrendingUp, TrendingDown, Activity, BarChart, AlertTriangle } from 'lucide-react';
 import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
 import { useMembershipPlans } from '@/hooks/useMembershipPlans';
