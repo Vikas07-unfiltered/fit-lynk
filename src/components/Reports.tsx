@@ -12,9 +12,6 @@ import { useDashboardAnalytics } from '@/hooks/useDashboardAnalytics';
 import { usePayments } from '@/hooks/usePayments';
 import { useMembers } from '@/hooks/useMembers';
 import { exportToPDF, exportToExcel } from './reports/ExportUtils';
-import ReportsTab from './reports/ReportsTab';
-import AnalyticsTab from './reports/AnalyticsTab';
-import MembersTab from './reports/MembersTab';
 import StatCard from './reports/StatCard';
 
 const Reports = () => {
@@ -22,18 +19,79 @@ const Reports = () => {
   const [activeTab, setActiveTab] = useState('reports');
   const isMobile = useIsMobile();
   const { analytics, loading } = useAdvancedAnalytics();
-  const { analytics: dashboardData } = useDashboardAnalytics();
+  const { analytics: dashboardData, loading: dashboardLoading } = useDashboardAnalytics();
   const { members } = useMembers();
+  const { payments } = usePayments();
   
+  // Calculate current month revenue from payments
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+  const currentYear = currentDate.getFullYear();
+  
+  const currentMonthPayments = payments.filter(payment => {
+    const paymentDate = new Date(payment.payment_date);
+    return paymentDate.getMonth() === currentMonth && 
+           paymentDate.getFullYear() === currentYear &&
+           payment.status === 'completed';
+  });
+  
+  const lastMonthPayments = payments.filter(payment => {
+    const paymentDate = new Date(payment.payment_date);
+    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    return paymentDate.getMonth() === lastMonth && 
+           paymentDate.getFullYear() === lastMonthYear &&
+           payment.status === 'completed';
+  });
+
+  const currentMonthRevenue = currentMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const lastMonthRevenue = lastMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const yearToDateRevenue = payments
+    .filter(payment => {
+      const paymentDate = new Date(payment.payment_date);
+      return paymentDate.getFullYear() === currentYear && payment.status === 'completed';
+    })
+    .reduce((sum, payment) => sum + Number(payment.amount), 0);
+
+  // Calculate revenue change percentage
+  const revenueChange = lastMonthRevenue > 0 
+    ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+    : currentMonthRevenue > 0 ? 100 : 0;
+
+  // Calculate member statistics
+  const newMembersThisMonth = members.filter(member => {
+    const joinDate = new Date(member.join_date);
+    return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+  }).length;
+
+  const newMembersLastMonth = members.filter(member => {
+    const joinDate = new Date(member.join_date);
+    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    return joinDate.getMonth() === lastMonth && joinDate.getFullYear() === lastMonthYear;
+  }).length;
+
+  const memberChange = newMembersLastMonth > 0 
+    ? ((newMembersThisMonth - newMembersLastMonth) / newMembersLastMonth) * 100 
+    : newMembersThisMonth > 0 ? 100 : 0;
+
+  const activeMembers = members.filter(m => m.status === 'active').length;
+  const totalMembers = members.length;
+
+  // Calculate attendance data (mock for now since we don't have attendance analytics)
+  const attendanceChange = 0; // This would come from attendance analytics
+  const retentionRate = totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0;
+  const retentionChange = 0; // This would be calculated from historical data
+
   const weeklyData = {
-    revenue: 0,
-    revenueChange: 0,
-    members: 0,
-    memberChange: 0,
-    attendance: 0,
-    attendanceChange: 0,
-    retention: 0,
-    retentionChange: 0,
+    revenue: currentMonthRevenue,
+    revenueChange: revenueChange,
+    members: activeMembers,
+    memberChange: memberChange,
+    attendance: 0, // Would come from attendance data
+    attendanceChange: attendanceChange,
+    retention: retentionRate,
+    retentionChange: retentionChange,
   };
 
   const chartConfig = {
@@ -51,8 +109,6 @@ const Reports = () => {
     },
   };
 
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
-
   const topPeakHours = analytics.peakHours.slice(0, 8);
   const topEngagedMembers = analytics.memberEngagement.slice(0, 5);
   const recentTrends = analytics.attendanceTrends.slice(-30);
@@ -62,22 +118,23 @@ const Reports = () => {
     exportToPDF(
       activeTab,
       members,
-      dashboardData.monthlyRevenue ?? 0,
-      0, // Optionally compute lastMonthRevenue if available
+      currentMonthRevenue,
+      lastMonthRevenue,
       dashboardData
     );
   };
+  
   const handleExportExcelClick = () => {
     exportToExcel(
       activeTab,
       members,
-      dashboardData.monthlyRevenue ?? 0,
-      0, // Optionally compute lastMonthRevenue if available
+      currentMonthRevenue,
+      lastMonthRevenue,
       dashboardData
     );
   };
 
-  if (loading) {
+  if (loading || dashboardLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -127,7 +184,7 @@ const Reports = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Reports
@@ -169,7 +226,7 @@ const Reports = () => {
             />
             <StatCard
               title="Retention Rate"
-              value={`${weeklyData.retention}%`}
+              value={`${Math.round(weeklyData.retention)}%`}
               change={weeklyData.retentionChange}
               icon={TrendingUp}
               color="text-emerald-600"
@@ -178,42 +235,42 @@ const Reports = () => {
 
           {/* Reports Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
+            <Card className="animate-scale-in">
               <CardHeader>
                 <CardTitle>Monthly Revenue Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="text-sm font-medium">This Month</span>
-                  <span className="text-lg font-bold text-green-600">₹0</span>
+                  <span className="text-lg font-bold text-green-600">₹{currentMonthRevenue.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="text-sm font-medium">Last Month</span>
-                  <span className="text-lg font-bold">₹0</span>
+                  <span className="text-lg font-bold">₹{lastMonthRevenue.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="text-sm font-medium">Year to Date</span>
-                  <span className="text-lg font-bold">₹0</span>
+                  <span className="text-lg font-bold">₹{yearToDateRevenue.toLocaleString()}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="animate-scale-in">
               <CardHeader>
                 <CardTitle>Membership Overview</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="text-sm font-medium">New Members</span>
-                  <span className="text-lg font-bold text-blue-600">0</span>
+                  <span className="text-lg font-bold text-blue-600">{newMembersThisMonth}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                   <span className="text-sm font-medium">Active Members</span>
-                  <span className="text-lg font-bold">0</span>
+                  <span className="text-lg font-bold">{activeMembers}</span>
                 </div>
                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-                  <span className="text-sm font-medium">Expired Members</span>
-                  <span className="text-lg font-bold text-red-600">0</span>
+                  <span className="text-sm font-medium">Total Members</span>
+                  <span className="text-lg font-bold">{totalMembers}</span>
                 </div>
               </CardContent>
             </Card>
@@ -222,14 +279,35 @@ const Reports = () => {
           {/* Financial Reports */}
           <Card>
             <CardHeader>
-              <CardTitle>Financial Reports</CardTitle>
+              <CardTitle>Payment Summary</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <DollarSign className="w-12 h-12 mx-auto text-gray-400 mb-2" />
-                <p className="text-gray-600">No financial data available</p>
-                <p className="text-gray-500 text-sm">Start adding payment records to see financial reports</p>
-              </div>
+              {payments.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">₹{currentMonthRevenue.toLocaleString()}</div>
+                      <div className="text-sm text-green-700">This Month</div>
+                    </div>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">{currentMonthPayments.length}</div>
+                      <div className="text-sm text-blue-700">Payments This Month</div>
+                    </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">
+                        ₹{currentMonthPayments.length > 0 ? Math.round(currentMonthRevenue / currentMonthPayments.length).toLocaleString() : 0}
+                      </div>
+                      <div className="text-sm text-purple-700">Avg Payment</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <DollarSign className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+                  <p className="text-gray-600">No payment data available</p>
+                  <p className="text-gray-500 text-sm">Start recording payments to see financial reports</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -261,7 +339,7 @@ const Reports = () => {
             />
             <StatCard
               title="Retention Rate"
-              value={analytics.retentionAnalysis[0] ? `${Math.round(analytics.retentionAnalysis[0].retentionRate)}%` : '0%'}
+              value={analytics.retentionAnalysis[0] ? `${Math.round(analytics.retentionAnalysis[0].retentionRate)}%` : `${Math.round(retentionRate)}%`}
               change={weeklyData.retentionChange}
               icon={TrendingUp}
               color="text-emerald-600"
@@ -271,7 +349,7 @@ const Reports = () => {
           {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Peak Hours Chart */}
-            <Card className="h-full">
+            <Card className="h-full animate-scale-in">
               <CardHeader>
                 <CardTitle>Peak Hours Analysis</CardTitle>
               </CardHeader>
@@ -307,7 +385,7 @@ const Reports = () => {
             </Card>
 
             {/* Attendance Trends */}
-            <Card className="h-full">
+            <Card className="h-full animate-scale-in">
               <CardHeader>
                 <CardTitle>30-Day Attendance Trend</CardTitle>
               </CardHeader>
@@ -349,7 +427,7 @@ const Reports = () => {
             </Card>
 
             {/* Revenue Forecast */}
-            <Card className="h-full">
+            <Card className="h-full animate-scale-in">
               <CardHeader>
                 <CardTitle>Revenue Forecast</CardTitle>
               </CardHeader>
@@ -382,7 +460,7 @@ const Reports = () => {
             </Card>
 
             {/* Member Engagement */}
-            <Card className="h-full">
+            <Card className="h-full animate-scale-in">
               <CardHeader>
                 <CardTitle>Top Member Engagement</CardTitle>
               </CardHeader>
@@ -390,26 +468,29 @@ const Reports = () => {
                 <div className="h-[300px] w-full">
                   {topEngagedMembers.length > 0 ? (
                     <div className="space-y-4 pt-4">
-                      {topEngagedMembers.slice(0, 5).map((member, index) => (
-                        <div key={member.memberId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
-                            <div>
-                              <span className="text-sm font-medium">{member.memberName}</span>
-                              <p className="text-xs text-gray-500">{member.attendanceCount} visits</p>
+                      {topEngagedMembers.slice(0, 5).map((member, index) => {
+                        const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
+                        return (
+                          <div key={member.memberId} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover-scale">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[index] }}></div>
+                              <div>
+                                <span className="text-sm font-medium">{member.memberName}</span>
+                                <p className="text-xs text-gray-500">{member.attendanceCount} visits</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <div className="w-20 bg-gray-200 rounded-full h-2">
+                                <div 
+                                  className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                                  style={{ width: `${member.score}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs text-gray-600">{Math.round(member.score)}%</span>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-20 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-green-600 h-2 rounded-full transition-all duration-300" 
-                                style={{ width: `${member.score}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-xs text-gray-600">{Math.round(member.score)}%</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center">
@@ -424,7 +505,7 @@ const Reports = () => {
           </div>
 
           {/* Retention Analysis Table */}
-          <Card>
+          <Card className="animate-scale-in">
             <CardHeader>
               <CardTitle>Member Retention Analysis</CardTitle>
             </CardHeader>
@@ -443,7 +524,7 @@ const Reports = () => {
                     </thead>
                     <tbody>
                       {analytics.retentionAnalysis.map((period, index) => (
-                        <tr key={index} className="border-b last:border-b-0">
+                        <tr key={index} className="border-b last:border-b-0 hover-scale">
                           <td className="py-3 text-sm font-medium">{period.period}</td>
                           <td className="py-3 text-sm">{period.newMembers}</td>
                           <td className="py-3 text-sm">{period.activeMembers}</td>
@@ -469,6 +550,97 @@ const Reports = () => {
                   <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
                   <p className="text-gray-600">No retention data available</p>
                   <p className="text-gray-500 text-sm">Retention analysis will appear here once you have member data</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Members Tab */}
+        <TabsContent value="members" className="space-y-6">
+          {/* Member Summary Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <StatCard
+              title="Total Members"
+              value={members.length}
+              change={0}
+              icon={Users}
+              color="text-blue-600"
+            />
+            <StatCard
+              title="Active Members"
+              value={members.filter(m => m.status === 'active').length}
+              change={0}
+              icon={UserCheck}
+              color="text-green-600"
+            />
+            <StatCard
+              title="Inactive Members"
+              value={members.filter(m => m.status === 'inactive').length}
+              change={0}
+              icon={Users}
+              color="text-red-600"
+            />
+            <StatCard
+              title="New This Month"
+              value={newMembersThisMonth}
+              change={0}
+              icon={TrendingUp}
+              color="text-emerald-600"
+            />
+          </div>
+
+          {/* Member List Table */}
+          <Card className="animate-scale-in">
+            <CardHeader>
+              <CardTitle>Complete Member List</CardTitle>
+              <p className="text-sm text-gray-600">View all gym members with their current status and details</p>
+            </CardHeader>
+            <CardContent>
+              {members.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Member ID</th>
+                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Name</th>
+                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Phone</th>
+                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Plan</th>
+                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Status</th>
+                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Join Date</th>
+                        <th className="text-left text-sm font-medium text-gray-500 pb-3">Last Payment</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {members.map((member) => (
+                        <tr key={member.id} className="border-b last:border-b-0 hover-scale">
+                          <td className="py-3 text-sm font-medium">{member.user_id}</td>
+                          <td className="py-3 text-sm">{member.name}</td>
+                          <td className="py-3 text-sm">{member.phone}</td>
+                          <td className="py-3 text-sm">{member.plan}</td>
+                          <td className="py-3 text-sm">
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              member.status === 'active' 
+                                ? 'bg-green-100 text-green-700' 
+                                : 'bg-red-100 text-red-700'
+                            }`}>
+                              {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
+                            </span>
+                          </td>
+                          <td className="py-3 text-sm">{new Date(member.join_date).toLocaleDateString()}</td>
+                          <td className="py-3 text-sm">
+                            {member.last_payment ? new Date(member.last_payment).toLocaleDateString() : 'No payment'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 mx-auto text-gray-400 mb-2" />
+                  <p className="text-gray-600">No members found</p>
+                  <p className="text-gray-500 text-sm">Add members to see them listed here</p>
                 </div>
               )}
             </CardContent>
