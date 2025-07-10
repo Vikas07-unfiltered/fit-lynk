@@ -13,6 +13,7 @@ import { usePayments } from '@/hooks/usePayments';
 import { useMembers } from '@/hooks/useMembers';
 import { exportToPDF, exportToExcel } from './reports/ExportUtils';
 import StatCard from './reports/StatCard';
+import ExpiredMembersReport from '@/components/ExpiredMembersReport';
 
 const Reports = () => {
   const [reportPeriod, setReportPeriod] = useState('weekly');
@@ -184,7 +185,7 @@ const Reports = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="reports" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Reports
@@ -196,6 +197,10 @@ const Reports = () => {
           <TabsTrigger value="members" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             Members
+          </TabsTrigger>
+          <TabsTrigger value="expired" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Expired
           </TabsTrigger>
         </TabsList>
 
@@ -310,6 +315,10 @@ const Reports = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="expired" className="space-y-6">
+          <ExpiredMembersReport />
         </TabsContent>
 
         {/* Analytics Tab */}

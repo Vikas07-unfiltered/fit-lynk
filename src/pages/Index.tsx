@@ -21,7 +21,6 @@ const Index = () => {
     { id: 'members', label: 'Members', icon: Users },
     { id: 'attendance', label: 'Attendance', icon: Calendar },
     { id: 'payments', label: 'Payments', icon: CreditCard },
-    { id: 'expired', label: 'Expired', icon: AlertTriangle },
     { id: 'reports', label: 'Reports', icon: TrendingUp },
     { id: 'trainers', label: 'Trainers', icon: UserCheck },
   ];
