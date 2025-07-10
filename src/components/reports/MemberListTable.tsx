@@ -1,5 +1,6 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatDate, parseDate } from '@/utils/date';
 import { Users } from 'lucide-react';
 import { Member } from '@/types/member';
 
@@ -43,13 +44,7 @@ const MemberListTable = ({ members }: MemberListTableProps) => {
                 {(() => {
                   const today = new Date();
                   today.setHours(0,0,0,0); // Set time to midnight for accurate comparison
-                  let expiry: Date | null = null;
-                  if (member.plan_expiry_date) {
-                    // Ensure ISO format for reliable parsing
-                    const iso = member.plan_expiry_date.includes('T') ? member.plan_expiry_date : `${member.plan_expiry_date}T00:00:00`;
-                    const parsed = new Date(iso);
-                    expiry = isNaN(parsed.getTime()) ? null : parsed;
-                  }
+                  const expiry = parseDate(member.plan_expiry_date);
                   const isExpired = expiry ? expiry.getTime() < today.getTime() : false;
                   const statusLabel = isExpired ? 'Inactive' : (member.status.charAt(0).toUpperCase() + member.status.slice(1));
                   const badgeClass = isExpired ? 'bg-red-100 text-red-700' : (member.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
@@ -61,9 +56,9 @@ const MemberListTable = ({ members }: MemberListTableProps) => {
                   );
                 })()}
               </TableCell>
-              <TableCell>{new Date(member.join_date).toLocaleDateString()}</TableCell>
+              <TableCell>{formatDate(member.join_date)}</TableCell>
               <TableCell>
-                {member.last_payment ? new Date(member.last_payment).toLocaleDateString() : 'No payment'}
+                {member.last_payment ? formatDate(member.last_payment) : 'No payment'}
               </TableCell>
             </TableRow>
           ))}

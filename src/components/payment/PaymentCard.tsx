@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { IndianRupee, Bell } from 'lucide-react';
+import { formatDate } from '@/utils/date';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Payment } from '@/types/payment';
 
@@ -44,7 +45,7 @@ const PaymentCard = ({ payment, onSendReminder }: PaymentCardProps) => {
               </div>
               <div>
                 <span className="font-medium">Date:</span>
-                <p>{new Date(payment.payment_date).toLocaleDateString()}</p>
+                <p>{formatDate(payment.payment_date)}</p>
               </div>
               <div>
                 <span className="font-medium">Method:</span>

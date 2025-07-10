@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/utils/date';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -131,7 +132,7 @@ const ExpiredMembersReport = () => {
                           </div>
                           <div>
                             <span className="text-gray-500">Expired:</span>
-                            <p className="font-medium">{new Date(member.expiry_date).toLocaleDateString()}</p>
+                            <p className="font-medium">{formatDate(member.expiry_date)}</p>
                           </div>
                           <div>
                             <span className="text-gray-500">Phone:</span>
@@ -141,7 +142,7 @@ const ExpiredMembersReport = () => {
                             <span className="text-gray-500">Last Payment:</span>
                             <p className="font-medium">
                               {member.last_payment_date 
-                                ? new Date(member.last_payment_date).toLocaleDateString()
+                                ? formatDate(member.last_payment_date)
                                 : 'No payment'
                               }
                             </p>
@@ -224,7 +225,7 @@ const ExpiredMembersReport = () => {
                             </div>
                           </TableCell>
                           <TableCell>{member.plan_name}</TableCell>
-                          <TableCell>{new Date(member.expiry_date).toLocaleDateString()}</TableCell>
+                          <TableCell>{formatDate(member.expiry_date)}</TableCell>
                           <TableCell>
                             <Badge className={getDaysExpiredBadge(member.days_expired)}>
                               {member.days_expired} days
@@ -232,7 +233,7 @@ const ExpiredMembersReport = () => {
                           </TableCell>
                           <TableCell>
                             {member.last_payment_date 
-                              ? new Date(member.last_payment_date).toLocaleDateString()
+                              ? formatDate(member.last_payment_date)
                               : 'No payment'
                             }
                           </TableCell>

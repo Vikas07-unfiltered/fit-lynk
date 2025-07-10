@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { Member } from '@/types/member';
+import { formatDate } from '@/utils/date';
 
 export const exportToPDF = (
   activeTab: string,
@@ -16,7 +17,7 @@ export const exportToPDF = (
   doc.setFontSize(20);
   doc.text('Gym Reports', 20, 20);
   doc.setFontSize(12);
-  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 30);
+  doc.text(`Generated on: ${formatDate(new Date())}`, 20, 30);
   
   // Add member list if on members tab
   if (activeTab === 'members') {

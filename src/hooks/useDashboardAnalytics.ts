@@ -38,7 +38,7 @@ export const useDashboardAnalytics = () => {
       // Fetch members data
       const { data: members } = await supabase
         .from('members')
-        .select('*')
+        .select('id, user_id, name, phone, plan, status, join_date, plan_expiry_date')
         .eq('gym_id', gym.id);
 
       // Fetch membership plans
@@ -56,7 +56,15 @@ export const useDashboardAnalytics = () => {
 
       // Calculate analytics
       const totalMembers = members?.length || 0;
-      const activeMembers = members?.filter(m => m.status === 'active').length || 0;
+      // Determine active members based on status and plan_expiry_date
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const activeMembersList = members?.filter(m => {
+        const expiry = m.plan_expiry_date ? new Date(m.plan_expiry_date) : null;
+        const isExpired = expiry ? expiry.getTime() < today.getTime() : false;
+        return m.status === 'active' && !isExpired;
+      }) || [];
+      const activeMembers = activeMembersList.length;
       const totalPlans = plans?.length || 0;
 
       // New members this month
@@ -81,17 +89,26 @@ export const useDashboardAnalytics = () => {
         ? plans.reduce((sum, plan) => sum + Number(plan.price), 0) / plans.length
         : 0;
 
-      // Calculate estimated monthly revenue (assuming all active members pay)
-      const planPriceMap = plans?.reduce((acc, plan) => {
-        acc[plan.name] = Number(plan.price) / plan.duration_months;
-        return acc;
-      }, {} as Record<string, number>) || {};
+      // Calculate actual monthly revenue based on completed payments this month
+      let monthlyRevenue = 0;
+      const { data: monthPayments } = await supabase
+        .from('payments')
+        .select('amount, payment_date, status')
+        .eq('gym_id', gym.id)
+        .eq('status', 'completed');
 
-      const monthlyRevenue = activeMembers && plans ? 
-        members.filter(m => m.status === 'active').reduce((sum, member) => {
-          const monthlyPrice = planPriceMap[member.plan] || 0;
-          return sum + monthlyPrice;
-        }, 0) : 0;
+      if (monthPayments) {
+        const current = new Date();
+        const cm = current.getMonth();
+        const cy = current.getFullYear();
+        monthlyRevenue = monthPayments.reduce((sum, p: any) => {
+          const d = new Date(p.payment_date);
+          if (d.getMonth() === cm && d.getFullYear() === cy) {
+            return sum + Number(p.amount);
+          }
+          return sum;
+        }, 0);
+      }
 
       // Find most popular plan
       const planCounts = members?.reduce((acc, member) => {

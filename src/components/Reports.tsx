@@ -1,8 +1,10 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Download, FileText, BarChart3, Users, TrendingUp, TrendingDown, DollarSign, Calendar, Clock, UserCheck } from 'lucide-react';
+import { formatDate, parseDate } from '@/utils/date';
 import { useState } from 'react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { ResponsiveContainer, BarChart, LineChart, XAxis, YAxis, Bar, Line } from 'recharts';
@@ -17,29 +19,55 @@ import ExpiredMembersReport from '@/components/ExpiredMembersReport';
 
 const Reports = () => {
   const [reportPeriod, setReportPeriod] = useState('weekly');
-  const [activeTab, setActiveTab] = useState('reports');
   const isMobile = useIsMobile();
   const { analytics, loading } = useAdvancedAnalytics();
   const { analytics: dashboardData, loading: dashboardLoading } = useDashboardAnalytics();
   const { members } = useMembers();
+
+  const [activeTab, setActiveTab] = useState('reports');
+
+  // Year baseline for calculations
+  const nowYear = new Date().getFullYear();
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
+
+  const passesDateRange = (dateStr: string | Date | null | undefined) => {
+    const d = parseDate(dateStr as any);
+    if (!d) return true;
+    if (fromDate && d.getTime() < fromDate.getTime()) return false;
+    if (toDate && d.getTime() > toDate.getTime()) return false;
+    return true;
+  };
+
+  const filteredMembers = members.filter(m => passesDateRange(m.join_date));
+
+  // Determine expiry-aware status
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const isExpired = (m: any) => {
+    const exp = parseDate(m.plan_expiry_date);
+    return exp ? exp.getTime() < today.getTime() : false;
+  };
+  const activeMembersList = members.filter(m => m.status === 'active' && !isExpired(m));
+  const inactiveMembersList = members.filter(m => m.status !== 'active' || isExpired(m));
   const { payments } = usePayments();
   
   // Calculate current month revenue from payments
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
-  const currentYear = currentDate.getFullYear();
   
+  // Calculate current month revenue
   const currentMonthPayments = payments.filter(payment => {
-    const paymentDate = new Date(payment.payment_date);
+    const paymentDate = parseDate(payment.payment_date);
     return paymentDate.getMonth() === currentMonth && 
-           paymentDate.getFullYear() === currentYear &&
+           paymentDate.getFullYear() === nowYear &&
            payment.status === 'completed';
   });
   
   const lastMonthPayments = payments.filter(payment => {
-    const paymentDate = new Date(payment.payment_date);
+    const paymentDate = parseDate(payment.payment_date);
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const lastMonthYear = currentMonth === 0 ? nowYear - 1 : nowYear;
     return paymentDate.getMonth() === lastMonth && 
            paymentDate.getFullYear() === lastMonthYear &&
            payment.status === 'completed';
@@ -49,8 +77,8 @@ const Reports = () => {
   const lastMonthRevenue = lastMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const yearToDateRevenue = payments
     .filter(payment => {
-      const paymentDate = new Date(payment.payment_date);
-      return paymentDate.getFullYear() === currentYear && payment.status === 'completed';
+      const paymentDate = parseDate(payment.payment_date);
+      return paymentDate.getFullYear() === nowYear && payment.status === 'completed';
     })
     .reduce((sum, payment) => sum + Number(payment.amount), 0);
 
@@ -62,13 +90,13 @@ const Reports = () => {
   // Calculate member statistics
   const newMembersThisMonth = members.filter(member => {
     const joinDate = new Date(member.join_date);
-    return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === currentYear;
+    return joinDate.getMonth() === currentMonth && joinDate.getFullYear() === nowYear;
   }).length;
 
   const newMembersLastMonth = members.filter(member => {
     const joinDate = new Date(member.join_date);
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const lastMonthYear = currentMonth === 0 ? nowYear - 1 : nowYear;
     return joinDate.getMonth() === lastMonth && joinDate.getFullYear() === lastMonthYear;
   }).length;
 
@@ -76,7 +104,7 @@ const Reports = () => {
     ? ((newMembersThisMonth - newMembersLastMonth) / newMembersLastMonth) * 100 
     : newMembersThisMonth > 0 ? 100 : 0;
 
-  const activeMembers = members.filter(m => m.status === 'active').length;
+  const activeMembers = activeMembersList.length;
   const totalMembers = members.length;
 
   // Calculate attendance data (mock for now since we don't have attendance analytics)
@@ -117,8 +145,8 @@ const Reports = () => {
   // Wrap export functions for use as button click handlers
   const handleExportPDFClick = () => {
     exportToPDF(
-      activeTab,
-      members,
+      'reports',
+      filteredMembers,
       currentMonthRevenue,
       lastMonthRevenue,
       dashboardData
@@ -127,8 +155,8 @@ const Reports = () => {
   
   const handleExportExcelClick = () => {
     exportToExcel(
-      activeTab,
-      members,
+      'reports',
+      filteredMembers,
       currentMonthRevenue,
       lastMonthRevenue,
       dashboardData
@@ -161,17 +189,13 @@ const Reports = () => {
         </div>
         
         <div className="flex gap-2 w-full sm:w-auto">
-          <Select value={reportPeriod} onValueChange={(val) => setReportPeriod(val)}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-            </SelectContent>
-          </Select>
-          
+        
+          {/* From date */}
+          <Input type="date" className="w-36" value={fromDate ? fromDate.toISOString().substring(0,10) : ''} onChange={(e) => setFromDate(e.target.value ? new Date(e.target.value) : null)} />
+
+          {/* To date */}
+          <Input type="date" className="w-36" value={toDate ? toDate.toISOString().substring(0,10) : ''} onChange={(e) => setToDate(e.target.value ? new Date(e.target.value) : null)} />
+
           <Button variant="outline" onClick={handleExportPDFClick} className="hover-scale">
             <Download className="w-4 h-4 mr-2" />
             PDF
@@ -571,21 +595,21 @@ const Reports = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <StatCard
               title="Total Members"
-              value={members.length}
+              value={filteredMembers.length}
               change={0}
               icon={Users}
               color="text-blue-600"
             />
             <StatCard
               title="Active Members"
-              value={members.filter(m => m.status === 'active').length}
+              value={activeMembersList.length}
               change={0}
               icon={UserCheck}
               color="text-green-600"
             />
             <StatCard
               title="Inactive Members"
-              value={members.filter(m => m.status === 'inactive').length}
+              value={inactiveMembersList.length}
               change={0}
               icon={Users}
               color="text-red-600"
@@ -606,7 +630,7 @@ const Reports = () => {
               <p className="text-sm text-gray-600">View all gym members with their current status and details</p>
             </CardHeader>
             <CardContent>
-              {members.length > 0 ? (
+              {filteredMembers.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -621,27 +645,25 @@ const Reports = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {members.map((member) => (
-                        <tr key={member.id} className="border-b last:border-b-0 hover-scale">
-                          <td className="py-3 text-sm font-medium">{member.user_id}</td>
-                          <td className="py-3 text-sm">{member.name}</td>
-                          <td className="py-3 text-sm">{member.phone}</td>
-                          <td className="py-3 text-sm">{member.plan}</td>
-                          <td className="py-3 text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              member.status === 'active' 
-                                ? 'bg-green-100 text-green-700' 
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                            </span>
-                          </td>
-                          <td className="py-3 text-sm">{new Date(member.join_date).toLocaleDateString()}</td>
-                          <td className="py-3 text-sm">
-                            {member.last_payment ? new Date(member.last_payment).toLocaleDateString() : 'No payment'}
-                          </td>
-                        </tr>
-                      ))}
+                      {filteredMembers.map((member) => {
+                        const expired = isExpired(member);
+                        const active = member.status === 'active' && !expired;
+                        const badgeClass = active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+                        const label = expired ? 'Inactive' : member.status.charAt(0).toUpperCase() + member.status.slice(1);
+                        return (
+                          <tr key={member.id} className="border-b last:border-b-0 hover-scale">
+                            <td className="py-3 text-sm font-medium">{member.user_id}</td>
+                            <td className="py-3 text-sm">{member.name}</td>
+                            <td className="py-3 text-sm">{member.phone}</td>
+                            <td className="py-3 text-sm">{member.plan}</td>
+                            <td className="py-3 text-sm">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeClass}`}>{label}</span>
+                            </td>
+                            <td className="py-3 text-sm">{formatDate(member.join_date)}</td>
+                            <td className="py-3 text-sm">{member.last_payment ? formatDate(member.last_payment) : 'No payment'}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

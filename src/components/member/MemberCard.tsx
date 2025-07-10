@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/utils/date';
 import { User, Calendar, Bell, Pencil, Trash } from 'lucide-react';
 import { Member } from '@/types/member';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,11 +130,11 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
         </div>
         <div className={`flex justify-between ${isMobile ? 'text-xs' : 'text-sm'}`}>
           <span className="font-medium">Joined:</span>
-          <span className="truncate ml-2">{member.join_date}</span>
+          <span className="truncate ml-2">{formatDate(member.join_date)}</span>
         </div>
         <div className={`flex justify-between ${isMobile ? 'text-xs' : 'text-sm'}`}>
           <span className="font-medium">Last Payment:</span>
-          <span className="truncate ml-2">{member.last_payment || 'No payment'}</span>
+          <span className="truncate ml-2">{member.last_payment ? formatDate(member.last_payment) : 'No payment'}</span>
         </div>
         <div className={`flex gap-2 pt-${isMobile ? '1' : '2'}`}>
           <Button

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/utils/date';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { MessageSquare, Send, Clock, Users } from 'lucide-react';
@@ -150,7 +151,7 @@ const AutoSmsNotifications = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-medium text-orange-700">
-                    Expires: {new Date(member.expiry_date).toLocaleDateString()}
+                    Expires: {formatDate(member.expiry_date)}
                   </div>
                   <Badge variant="outline" className="bg-orange-100 text-orange-700 text-xs">
                     SMS Ready

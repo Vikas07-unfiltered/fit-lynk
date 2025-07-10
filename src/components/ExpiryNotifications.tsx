@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { formatDate } from '@/utils/date';
 import { Bell, Calendar, Phone, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -150,7 +151,7 @@ const ExpiryNotifications = () => {
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-medium text-red-700">
-                    Expires: {new Date(member.expiry_date).toLocaleDateString()}
+                    Expires: {formatDate(member.expiry_date)}
                   </div>
                 </div>
               </div>

@@ -153,8 +153,34 @@ export const useMembers = () => {
     }
   };
 
+  // Initial fetch & realtime subscription
   useEffect(() => {
     fetchMembers();
+
+    if (!gym?.id) return;
+    // Subscribe to real-time changes for this gym's members
+    const channel = supabase
+      .channel(`members:gym_${gym.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'members', filter: `gym_id=eq.${gym.id}` },
+        (payload) => {
+          const newMember = payload.new as Member | null;
+          const oldMember = payload.old as Member | null;
+          if (payload.eventType === 'INSERT' && newMember) {
+            setMembers((prev) => [newMember, ...prev]);
+          } else if (payload.eventType === 'UPDATE' && newMember) {
+            setMembers((prev) => prev.map((m) => (m.id === newMember.id ? { ...m, ...newMember } : m)));
+          } else if (payload.eventType === 'DELETE' && oldMember) {
+            setMembers((prev) => prev.filter((m) => m.id !== oldMember.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [gym?.id]);
 
   return {
