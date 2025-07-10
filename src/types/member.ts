@@ -8,6 +8,7 @@ export interface Member {
   status: string;
   join_date: string;
   last_payment: string | null;
+  plan_expiry_date?: string;
   photo_url?: string;
 }
 
@@ -17,5 +18,5 @@ export interface NewMember {
   plan: string;
   join_date?: string;
   first_payment_date?: string;
-  expiry_date?: string;
+  plan_expiry_date?: string;
 }

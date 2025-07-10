@@ -98,9 +98,24 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
               </p>
             </div>
           </div>
-          <Badge className={`${getStatusBadge(member.status)} ${isMobile ? 'text-xs px-2 py-1' : ''} flex-shrink-0`}>
-            {member.status}
-          </Badge>
+          {(() => {
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const expiry = member.plan_expiry_date ? new Date(member.plan_expiry_date) : null;
+            const isExpired = expiry ? expiry.getTime() < today.getTime() : false;
+            const statusLabel = isExpired ? 'inactive' : member.status;
+            const badgeClass = isExpired
+              ? 'bg-red-100 text-red-800'
+              : (member.status === 'active'
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800');
+            return (
+              <Badge className={`${badgeClass} ${isMobile ? 'text-xs px-2 py-1' : ''} flex-shrink-0`}>
+                {statusLabel}
+              </Badge>
+            );
+          })()}
+
         </div>
       </CardHeader>
       <CardContent className={`space-y-${isMobile ? '2' : '3'}`}>

@@ -40,12 +40,26 @@ const MemberListTable = ({ members }: MemberListTableProps) => {
               <TableCell>{member.phone}</TableCell>
               <TableCell>{member.plan}</TableCell>
               <TableCell>
-                <Badge 
-                  variant={member.status === 'active' ? 'default' : 'secondary'}
-                  className={member.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}
-                >
-                  {member.status.charAt(0).toUpperCase() + member.status.slice(1)}
-                </Badge>
+                {(() => {
+                  const today = new Date();
+                  today.setHours(0,0,0,0); // Set time to midnight for accurate comparison
+                  let expiry: Date | null = null;
+                  if (member.plan_expiry_date) {
+                    // Ensure ISO format for reliable parsing
+                    const iso = member.plan_expiry_date.includes('T') ? member.plan_expiry_date : `${member.plan_expiry_date}T00:00:00`;
+                    const parsed = new Date(iso);
+                    expiry = isNaN(parsed.getTime()) ? null : parsed;
+                  }
+                  const isExpired = expiry ? expiry.getTime() < today.getTime() : false;
+                  const statusLabel = isExpired ? 'Inactive' : (member.status.charAt(0).toUpperCase() + member.status.slice(1));
+                  const badgeClass = isExpired ? 'bg-red-100 text-red-700' : (member.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
+                  const badgeVariant = isExpired ? 'secondary' : (member.status === 'active' ? 'default' : 'secondary');
+                  return (
+                    <Badge variant={badgeVariant} className={badgeClass}>
+                      {statusLabel}
+                    </Badge>
+                  );
+                })()}
               </TableCell>
               <TableCell>{new Date(member.join_date).toLocaleDateString()}</TableCell>
               <TableCell>

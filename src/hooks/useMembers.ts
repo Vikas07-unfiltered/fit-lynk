@@ -18,7 +18,7 @@ export const useMembers = () => {
     try {
       const { data, error } = await supabase
         .from('members')
-        .select('*')
+        .select('id, user_id, name, phone, plan, status, join_date, last_payment, plan_expiry_date, photo_url')
         .eq('gym_id', gym.id)
         .order('created_at', { ascending: false });
 
