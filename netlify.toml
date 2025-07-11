@@ -8,6 +8,18 @@
 [build.environment]
   NODE_VERSION = "18"
 
+# Cache hashed asset files for 1 year (max permitted) so repeat visits are blazing fast
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Never cache HTML so users always get the latest content/deploy
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
