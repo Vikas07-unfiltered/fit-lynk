@@ -23,6 +23,7 @@ export const useMembers = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('Fetched members from Supabase:', data);
       setMembers(data || []);
     } catch (error) {
       console.error('Error fetching members:', error);

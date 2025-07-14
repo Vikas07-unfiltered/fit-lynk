@@ -28,7 +28,7 @@ export function parseDate(value: string | Date | null | undefined): Date | null 
 
 export function formatDate(value: string | Date | null | undefined): string {
   if (!value) return '';
-  const date = value instanceof Date ? value : new Date(value);
-  if (isNaN(date.getTime())) return '';
-    return format(date, 'dd-MM-yyyy');
+  const date = parseDate(value);
+  if (!date) return '';
+  return format(date, 'dd-MM-yyyy');
 }

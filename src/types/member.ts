@@ -6,6 +6,7 @@ export interface Member {
   phone: string;
   plan: string;
   status: string;
+  gym_id?: string;
   join_date: string;
   last_payment: string | null;
   plan_expiry_date?: string;

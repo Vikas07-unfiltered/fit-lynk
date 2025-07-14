@@ -39,7 +39,13 @@ const Reports = () => {
     return true;
   };
 
-  const filteredMembers = members.filter(m => passesDateRange(m.join_date));
+  const { payments } = usePayments();
+
+// Only consider members whose join_date falls within the selected range
+const filteredMembers = members.filter(m => passesDateRange(m.join_date));
+
+// Also filter payments by payment_date so revenue cards respect the same period
+const filteredPayments = payments.filter(p => passesDateRange(p.payment_date));
 
   // Determine expiry-aware status
   const today = new Date();
@@ -48,23 +54,141 @@ const Reports = () => {
     const exp = parseDate(m.plan_expiry_date);
     return exp ? exp.getTime() < today.getTime() : false;
   };
-  const activeMembersList = members.filter(m => m.status === 'active' && !isExpired(m));
-  const inactiveMembersList = members.filter(m => m.status !== 'active' || isExpired(m));
-  const { payments } = usePayments();
+  const activeMembersList = filteredMembers.filter(m => {
+  const expiry = m.plan_expiry_date ? new Date(m.plan_expiry_date) : null;
+  return expiry && expiry >= today;
+});
+const inactiveMembersList = filteredMembers.filter(m => {
+  const expiry = m.plan_expiry_date ? new Date(m.plan_expiry_date) : null;
+  return !expiry || expiry < today;
+});
+const activeMembers = activeMembersList.length;
+const inactiveMembers = inactiveMembersList.length;
   
-  // Calculate current month revenue from payments
+  // ---------------- Revenue & Payments ----------------
+// Helper to know if the user has set a custom date window
+const rangeActive = !!fromDate || !!toDate;
+
+// Payments for the main ("current") period and for the comparison period
+let currentPeriodPayments: typeof payments = [];
+let comparisonPeriodPayments: typeof payments = [];
+
+if (rangeActive) {
+  // Custom window selected → simply use the filtered list
+  currentPeriodPayments = filteredPayments;
+
+  // Derive a previous window of equal length for comparison (only if both ends are set)
+  if (fromDate && toDate) {
+    const windowMs = toDate.getTime() - fromDate.getTime();
+    const prevStart = new Date(fromDate.getTime() - windowMs - 86_400_000); // gap of 1 day
+    const prevEnd = new Date(fromDate.getTime() - 86_400_000);
+    comparisonPeriodPayments = payments.filter(p => {
+      const d = parseDate(p.payment_date);
+      return d && d >= prevStart && d <= prevEnd && p.status === 'completed';
+    });
+  }
+} else {
+  // No custom window → compare this calendar month vs previous calendar month
+  const today = new Date();
+  const thisMonth = today.getMonth();
+  const thisYear = today.getFullYear();
+  const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+  const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
+
+  currentPeriodPayments = payments.filter(p => {
+    const d = parseDate(p.payment_date);
+    return d && d.getMonth() === thisMonth && d.getFullYear() === thisYear && p.status === 'completed';
+  });
+  comparisonPeriodPayments = payments.filter(p => {
+    const d = parseDate(p.payment_date);
+    return d && d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && p.status === 'completed';
+  });
+}
+
+// Revenues
+const currentMonthPayments = currentPeriodPayments; // kept for UI that shows counts / avg
+const lastMonthPayments = comparisonPeriodPayments;
+
+const currentMonthRevenue = currentPeriodPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+const lastMonthRevenue = comparisonPeriodPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+// Year-to-date revenue respects the filtered payments list so that it honours the custom range
+const yearToDateRevenue = filteredPayments
+  .filter(p => {
+    const d = parseDate(p.payment_date);
+    return d && d.getFullYear() === nowYear && p.status === 'completed';
+  })
+  .reduce((sum, p) => sum + Number(p.amount), 0);
+
+// Revenue percentage change helper (avoid /0)
+const revenueChange = lastMonthRevenue > 0 ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : currentMonthRevenue > 0 ? 100 : 0;
+
+/* DUPLICATE BLOCK START
+// ---------------- Member Statistics ----------------
+const rangeActive = !!fromDate || !!toDate;
+
+// --- Revenue calculations ---
+let currentMonthRevenue = 0;
+let lastMonthRevenue = 0;
+
+if (rangeActive) {
+  // When the user has selected a custom range we simply use that range
+  currentMonthRevenue = filteredPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+
+  // For comparison, compute the revenue of an immediately-preceding window of equal length
+  if (fromDate && toDate) {
+    const windowMs = toDate.getTime() - fromDate.getTime();
+    const prevStart = new Date(fromDate.getTime() - windowMs - 86_400_000); // subtract 1 day gap
+    const prevEnd = new Date(fromDate.getTime() - 86_400_000);
+
+    const prevPayments = payments.filter(p => {
+      const d = parseDate(p.payment_date);
+      return d && d >= prevStart && d <= prevEnd && p.status === 'completed';
+    });
+    lastMonthRevenue = prevPayments.reduce((sum, p) => sum + Number(p.amount), 0);
+  }
+} else {
+  // Default behaviour: compare this calendar month vs. last calendar month
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
-  
-  // Calculate current month revenue
-  const currentMonthPayments = payments.filter(payment => {
-    const paymentDate = parseDate(payment.payment_date);
-    return paymentDate.getMonth() === currentMonth && 
-           paymentDate.getFullYear() === nowYear &&
-           payment.status === 'completed';
-  });
-  
-  const lastMonthPayments = payments.filter(payment => {
+  const currentYear = currentDate.getFullYear();
+  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+  currentMonthRevenue = filteredPayments.filter(p => {
+    const d = parseDate(p.payment_date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear && p.status === 'completed';
+  }).reduce((sum, p) => sum + Number(p.amount), 0);
+    // Derive last-period payments (same length window immediately before)
+    if (fromDate && toDate) {
+      const msWindow = toDate.getTime() - fromDate.getTime();
+      const prevStart = new Date(fromDate.getTime() - msWindow - 24*60*60*1000); // subtract a day to avoid overlap
+      const prevEnd = new Date(fromDate.getTime() - 24*60*60*1000);
+      lastMonthPayments = payments.filter(p => {
+        const d = parseDate(p.payment_date);
+        return d >= prevStart && d <= prevEnd;
+      });
+      lastMonthRevenue = lastMonthPayments.reduce((sum,p)=> sum + Number(p.amount), 0);
+    }
+  } else {
+    // Fallback to original month-based logic using calendar months
+    currentMonthPayments = filteredPayments.filter(p => {
+      const d = parseDate(p.payment_date);
+      return d.getMonth() === currentMonth && d.getFullYear() === nowYear && p.status === 'completed';
+    });
+    currentMonthRevenue = currentMonthPayments.reduce((sum,p)=> sum + Number(p.amount), 0);
+
+    lastMonthPayments = filteredPayments.filter(p => {
+      const d = parseDate(p.payment_date);
+      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+      const lastMonthYear = currentMonth === 0 ? nowYear - 1 : nowYear;
+      return d.getMonth() === lastMonth && d.getFullYear() === lastMonthYear && p.status === 'completed';
+    });
+    lastMonthRevenue = lastMonthPayments.reduce((sum,p)=> sum + Number(p.amount), 0);
+  }
+
+  const lastMonthPaymentsCalc = rangeActive ? lastMonthPayments : lastMonthPayments;
+
     const paymentDate = parseDate(payment.payment_date);
     const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const lastMonthYear = currentMonth === 0 ? nowYear - 1 : nowYear;
@@ -73,9 +197,9 @@ const Reports = () => {
            payment.status === 'completed';
   });
 
-  const currentMonthRevenue = currentMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
-  const lastMonthRevenue = lastMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
-  const yearToDateRevenue = payments
+  const currentMonthRevenue = currentMonthRevenue || currentMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const lastMonthRevenue = lastMonthRevenue || lastMonthPayments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const yearToDateRevenue = filteredPayments
     .filter(payment => {
       const paymentDate = parseDate(payment.payment_date);
       return paymentDate.getFullYear() === nowYear && payment.status === 'completed';
@@ -123,7 +247,48 @@ const Reports = () => {
     retentionChange: retentionChange,
   };
 
-  const chartConfig = {
+  */
+
+// ---------------- Member & Attendance Statistics ----------------
+const currentDate = new Date();
+const currentMonthIdx = currentDate.getMonth();
+
+const newMembersThisMonth = members.filter(member => {
+  const join = parseDate(member.join_date);
+  return join && join.getMonth() === currentMonthIdx && join.getFullYear() === nowYear;
+}).length;
+
+const lastMonthIdx = currentMonthIdx === 0 ? 11 : currentMonthIdx - 1;
+const lastMonthYear = currentMonthIdx === 0 ? nowYear - 1 : nowYear;
+
+const newMembersLastMonth = members.filter(member => {
+  const join = parseDate(member.join_date);
+  return join && join.getMonth() === lastMonthIdx && join.getFullYear() === lastMonthYear;
+}).length;
+
+const memberChange = newMembersLastMonth > 0
+  ? ((newMembersThisMonth - newMembersLastMonth) / newMembersLastMonth) * 100
+  : newMembersThisMonth > 0 ? 100 : 0;
+
+const totalMembers = members.length;
+
+const attendanceChange = 0; // Placeholder until attendance analytics added
+const retentionRate = totalMembers > 0 ? (activeMembers / totalMembers) * 100 : 0;
+const retentionChange = 0;
+
+const weeklyData = {
+  revenue: currentMonthRevenue,
+  revenueChange,
+  members: activeMembers,
+  memberChange,
+  attendance: 0,
+  attendanceChange,
+  retention: retentionRate,
+  retentionChange,
+};
+
+// ----- Charts -----
+const chartConfig = {
     count: {
       label: "Count",
       color: "#10b981",
@@ -602,14 +767,14 @@ const Reports = () => {
             />
             <StatCard
               title="Active Members"
-              value={activeMembersList.length}
+              value={activeMembers}
               change={0}
               icon={UserCheck}
               color="text-green-600"
             />
             <StatCard
               title="Inactive Members"
-              value={inactiveMembersList.length}
+              value={inactiveMembers}
               change={0}
               icon={Users}
               color="text-red-600"
@@ -646,10 +811,10 @@ const Reports = () => {
                     </thead>
                     <tbody>
                       {filteredMembers.map((member) => {
-                        const expired = isExpired(member);
-                        const active = member.status === 'active' && !expired;
-                        const badgeClass = active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-                        const label = expired ? 'Inactive' : member.status.charAt(0).toUpperCase() + member.status.slice(1);
+                        const expiry = member.plan_expiry_date ? new Date(member.plan_expiry_date) : null;
+                        const isActive = expiry && expiry >= today;
+                        const badgeClass = isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+                        const label = isActive ? 'Active' : 'Inactive';
                         return (
                           <tr key={member.id} className="border-b last:border-b-0 hover-scale">
                             <td className="py-3 text-sm font-medium">{member.user_id}</td>

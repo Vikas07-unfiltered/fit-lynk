@@ -9,6 +9,9 @@ interface MemberListTableProps {
 }
 
 const MemberListTable = ({ members }: MemberListTableProps) => {
+  console.log('Rendering MemberListTable');
+  // Debug: log member data to inspect plan_expiry_date
+  console.log('Member data:', members);
   if (members.length === 0) {
     return (
       <div className="text-center py-8">
@@ -31,37 +34,44 @@ const MemberListTable = ({ members }: MemberListTableProps) => {
             <TableHead>Status</TableHead>
             <TableHead>Join Date</TableHead>
             <TableHead>Last Payment</TableHead>
+            <TableHead>Expiry Date</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {members.map((member) => (
-            <TableRow key={member.id} className="hover-scale">
-              <TableCell className="font-medium">{member.user_id}</TableCell>
-              <TableCell>{member.name}</TableCell>
-              <TableCell>{member.phone}</TableCell>
-              <TableCell>{member.plan}</TableCell>
-              <TableCell>
-                {(() => {
-                  const today = new Date();
-                  today.setHours(0,0,0,0); // Set time to midnight for accurate comparison
-                  const expiry = parseDate(member.plan_expiry_date);
-                  const isExpired = expiry ? expiry.getTime() < today.getTime() : false;
-                  const statusLabel = isExpired ? 'Inactive' : (member.status.charAt(0).toUpperCase() + member.status.slice(1));
-                  const badgeClass = isExpired ? 'bg-red-100 text-red-700' : (member.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700');
-                  const badgeVariant = isExpired ? 'secondary' : (member.status === 'active' ? 'default' : 'secondary');
-                  return (
-                    <Badge variant={badgeVariant} className={badgeClass}>
-                      {statusLabel}
-                    </Badge>
-                  );
-                })()}
-              </TableCell>
-              <TableCell>{formatDate(member.join_date)}</TableCell>
-              <TableCell>
-                {member.last_payment ? formatDate(member.last_payment) : 'No payment'}
-              </TableCell>
-            </TableRow>
-          ))}
+          {members.map((member) => {
+            console.log('Row:', member.user_id, 'Expiry:', member.plan_expiry_date);
+            return (
+              <TableRow key={member.id} className="hover-scale">
+                <TableCell className="font-medium">{member.user_id}</TableCell>
+                <TableCell>{member.name}</TableCell>
+                <TableCell>{member.phone}</TableCell>
+                <TableCell>{member.plan}</TableCell>
+                <TableCell>
+                  {(() => {
+                    const today = new Date();
+                    today.setHours(0,0,0,0);
+                    const expiry = parseDate(member.plan_expiry_date);
+                    const isExpired = expiry ? expiry.getTime() < today.getTime() : false;
+                    const statusLabel = isExpired ? 'Inactive' : 'Active';
+                    const badgeClass = isExpired ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+                    const badgeVariant = isExpired ? 'secondary' : 'default';
+                    return (
+                      <Badge variant={badgeVariant} className={badgeClass}>
+                        {statusLabel}
+                      </Badge>
+                    );
+                  })()}
+                </TableCell>
+                <TableCell>{formatDate(member.join_date)}</TableCell>
+                <TableCell>
+                  {member.last_payment ? formatDate(member.last_payment) : 'No payment'}
+                </TableCell>
+                <TableCell>
+                  {member.plan_expiry_date ? formatDate(member.plan_expiry_date) : 'N/A'}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

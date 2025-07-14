@@ -3,13 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatDate } from '@/utils/date';
-import { User, Calendar, Bell, Pencil, Trash } from 'lucide-react';
+import { User, Calendar, Bell, Pencil, Trash, IndianRupee } from 'lucide-react';
 import { Member } from '@/types/member';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useMembers } from '@/hooks/useMembers';
+import { processMembershipPayment } from '@/utils/membership';
 
 interface MemberCardProps {
   member: Member;
@@ -17,8 +18,9 @@ interface MemberCardProps {
 }
 
 const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
-  const { deleteMember, updateMember } = useMembers();
+  const { deleteMember, updateMember, fetchMembers } = useMembers();
   const [isEditing, setIsEditing] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const [editFields, setEditFields] = useState({ name: member.name, phone: member.phone, plan: member.plan });
   // Placeholder handlers for edit and delete
   const handleEdit = () => {
@@ -38,6 +40,36 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
     setIsEditing(false);
     setEditFields({ name: member.name, phone: member.phone, plan: member.plan });
   };
+  const handleCollectPayment = async () => {
+    const amountStr = prompt('Enter payment amount (₹):');
+    if (!amountStr) return;
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: 'Invalid', description: 'Enter a valid amount', variant: 'destructive' });
+      return;
+    }
+    setIsPaying(true);
+    try {
+      const res = await processMembershipPayment({
+        gymId: member.gym_id ?? '',
+        memberId: member.id,
+        amount,
+        method: 'cash',
+      });
+      if (res.success) {
+        toast({ title: 'Success', description: res.message });
+        fetchMembers();
+      } else {
+        toast({ title: 'Error', description: res.message, variant: 'destructive' });
+      }
+    } catch (err:any) {
+      console.error(err);
+      toast({ title: 'Error', description: 'Payment failed', variant: 'destructive' });
+    } finally {
+      setIsPaying(false);
+    }
+  };
+
   const handleDelete = async () => {
     if(window.confirm(`Are you sure you want to delete member: ${member.name}?`)) {
       await deleteMember(member.id);
@@ -101,22 +133,17 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
           </div>
           {(() => {
             const today = new Date();
-            today.setHours(0,0,0,0);
+            today.setHours(0,0,0,0); // Set time to midnight for accurate comparison
             const expiry = member.plan_expiry_date ? new Date(member.plan_expiry_date) : null;
-            const isExpired = expiry ? expiry.getTime() < today.getTime() : false;
-            const statusLabel = isExpired ? 'inactive' : member.status;
-            const badgeClass = isExpired
-              ? 'bg-red-100 text-red-800'
-              : (member.status === 'active'
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800');
+            const isActive = expiry && expiry >= today;
+            const statusLabel = isActive ? 'active' : 'inactive';
+            const badgeClass = isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
             return (
-              <Badge className={`${badgeClass} ${isMobile ? 'text-xs px-2 py-1' : ''} flex-shrink-0`}>
+              <Badge className={badgeClass}>
                 {statusLabel}
               </Badge>
             );
           })()}
-
         </div>
       </CardHeader>
       <CardContent className={`space-y-${isMobile ? '2' : '3'}`}>
@@ -144,6 +171,15 @@ const MemberCard = ({ member, onShowQR }: MemberCardProps) => {
             className={`border-blue-500 text-blue-600 hover:bg-blue-50 ${isMobile ? 'h-9 px-3' : 'px-3'}`}
           >
             <Pencil className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+          </Button>
+          <Button
+            size={isMobile ? 'sm' : 'sm'}
+            variant="outline"
+            onClick={handleCollectPayment}
+            disabled={isPaying}
+            className={`border-green-500 text-green-600 hover:bg-green-50 ${isMobile ? 'h-9 px-3' : 'px-3'}`}
+          >
+            <IndianRupee className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
           </Button>
           <Button
             size={isMobile ? "sm" : "sm"}
